@@ -1,0 +1,210 @@
+// Version: 1.0.0
+type BlogPost__72627970 =
+  {
+    author : Text;
+    categoryTags : [Text];
+    content : Text;
+    createdAt : Timestamp__301639476;
+    description : Text;
+    featuredImage : ExternalBlob__246066408;
+    id : Id__389469852;
+    postStatus : PostStatus__423738690;
+    publishDate : ?Timestamp__301639476;
+    slug : Text;
+    title : Text;
+    updatedAt : Timestamp__301639476
+  };
+type BookingStatus__866642965 = {#cancelled; #confirmed; #pending};
+type Booking__1057793126 =
+  {
+    createdAt : Timestamp__301639476;
+    customerName : Text;
+    email : Text;
+    endDate : Text;
+    id : Id__389469852;
+    phone : Text;
+    specialRequests : Text;
+    startDate : Text;
+    status : BookingStatus__866642965;
+    updatedAt : Timestamp__301639476;
+    vehicleId : Id__389469852
+  };
+type CompanySettings__223927913 =
+  {
+    address : Text;
+    email : Text;
+    facebookUrl : ?Text;
+    instagramUrl : ?Text;
+    linkedinUrl : ?Text;
+    logoUrl : Text;
+    phone : Text;
+    whatsapp : Text;
+    youtubeUrl : ?Text
+  };
+type Data__791452850<K, V> =
+  {var count : Nat__490723111; kvs : [var ?(K, V)]};
+type ExternalBlob__246066408 = Blob;
+type Id__389469852 = Nat;
+type Internal__8484328<K, V> =
+  {children : [var ?Node__46230540<K, V>]; data : Data__791452850<K, V>};
+type Leaf__809889148<K, V> = {data : Data__791452850<K, V>};
+type Map__158565046<K, V> = Map__297112838<K, V>;
+type Map__297112838<K, V> =
+  {var root : Node__46230540<K, V>; var size : Nat__490723111};
+type Map__605269027<K, V> = Map__158565046<K, V>;
+type MessageStatus__819009511 = {#archived; #read; #unread};
+type Message__714344397 =
+  {
+    createdAt : Timestamp__301639476;
+    customerName : Text;
+    email : Text;
+    id : Id__389469852;
+    message : Text;
+    phone : Text;
+    status : MessageStatus__819009511
+  };
+type Nat__490723111 = Nat__920180692;
+type Nat__920180692 = Nat;
+type NewsletterSubscriber__586845274 =
+  {
+    email : Text;
+    id : Id__389469852;
+    subscribedAt : Timestamp__301639476;
+    unsubscribedAt : ?Timestamp__301639476;
+    verified : Bool
+  };
+type Node__46230540<K, V> =
+  {#internal : Internal__8484328<K, V>; #leaf : Leaf__809889148<K, V>};
+type PostStatus__423738690 = {#draft; #published};
+type PropertyType__97042471 = {#apartment; #house; #land; #office};
+type Property__615325142 =
+  {
+    areaSqm : Nat;
+    bathrooms : Nat;
+    bedrooms : Nat;
+    createdAt : Timestamp__301639476;
+    description : Text;
+    featured : Bool;
+    id : Id__389469852;
+    images : [ExternalBlob__246066408];
+    location : Text;
+    price : Nat;
+    propertyType : PropertyType__97042471;
+    title : Text;
+    updatedAt : Timestamp__301639476
+  };
+type QuoteStatus__732674487 = {#accepted; #declined; #pending; #sent};
+type Quote__360373269 =
+  {
+    budgetRange : Text;
+    createdAt : Timestamp__301639476;
+    customerName : Text;
+    email : Text;
+    id : Id__389469852;
+    phone : Text;
+    requirements : Text;
+    serviceType : Text;
+    status : QuoteStatus__732674487;
+    updatedAt : Timestamp__301639476
+  };
+type Timestamp__301639476 = Int;
+type TrainingEnrollment__738176429 =
+  {
+    dateRegistered : Timestamp__301639476;
+    email : Text;
+    name : Text;
+    phone : Text
+  };
+type Training__312832989 =
+  {
+    createdAt : Timestamp__301639476;
+    description : Text;
+    durationDays : Nat;
+    enrollments : [TrainingEnrollment__738176429];
+    id : Id__389469852;
+    image : ExternalBlob__246066408;
+    maxCapacity : Nat;
+    price : Nat;
+    title : Text;
+    updatedAt : Timestamp__301639476
+  };
+type UserRole__1054455867 = {#admin; #guest; #user};
+type VehicleType__173044994 = {#bus; #car; #minibus; #truck};
+type Vehicle__553412953 =
+  {
+    capacity : Nat;
+    createdAt : Timestamp__301639476;
+    description : Text;
+    featured : Bool;
+    id : Id__389469852;
+    images : [ExternalBlob__246066408];
+    model : Text;
+    pricePerDay : Nat;
+    title : Text;
+    updatedAt : Timestamp__301639476;
+    vehicleType : VehicleType__173044994
+  };
+actor {
+  stable accessControlState :
+    {
+      var adminAssigned : Bool;
+      userRoles : Map__605269027<Principal, UserRole__1054455867>
+    };
+  stable bookings :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?Booking__1057793126]];
+      var elementIndex : Nat__490723111
+    };
+  stable companySettings : [var CompanySettings__223927913];
+  stable messages :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?Message__714344397]];
+      var elementIndex : Nat__490723111
+    };
+  stable nextBookingId : [var Nat];
+  stable nextMessageId : [var Nat];
+  stable nextPostId : [var Nat];
+  stable nextPropertyId : [var Nat];
+  stable nextQuoteId : [var Nat];
+  stable nextSubscriberId : [var Nat];
+  stable nextTrainingId : [var Nat];
+  stable nextVehicleId : [var Nat];
+  stable posts :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?BlogPost__72627970]];
+      var elementIndex : Nat__490723111
+    };
+  stable properties :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?Property__615325142]];
+      var elementIndex : Nat__490723111
+    };
+  stable quotes :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?Quote__360373269]];
+      var elementIndex : Nat__490723111
+    };
+  stable subscribers :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?NewsletterSubscriber__586845274]];
+      var elementIndex : Nat__490723111
+    };
+  stable trainings :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?Training__312832989]];
+      var elementIndex : Nat__490723111
+    };
+  stable vehicles :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?Vehicle__553412953]];
+      var elementIndex : Nat__490723111
+    }
+};

@@ -1,0 +1,31 @@
+{
+  "overview": "Plateforme digitale complète pour STS SOFITRANS SERVICE — entreprise sénégalaise spécialisée dans l'immobilier, le transport, l'agrobusiness et la formation. Interface publique avec catalogues filtrables, formulaires de contact/devis/réservation, blog, et boutons WhatsApp. Dashboard admin complet (Internet Identity) pour la gestion de tous les contenus.",
+  "features": [
+    "Page d'accueil avec hero section et logo d'entreprise",
+    "Catalogue immobilier avec filtres (prix, type, localisation)",
+    "Catalogue véhicules et réservation en ligne",
+    "Programme de formations avec inscription",
+    "Blog avec éditeur riche texte",
+    "Dashboard admin complet avec statistiques",
+    "Formulaires de contact, devis et réservation",
+    "Gestion des médias via object-storage",
+    "Authentification admin via Internet Identity",
+    "Boutons WhatsApp et appel direct intégrés",
+    "Design luxueux corporate en vert, noir et bleu",
+    "Interface entièrement en français"
+  ],
+  "category": "business",
+  "tags": [
+    "immobilier",
+    "transport",
+    "agrobusiness",
+    "formation",
+    "s-n-gal",
+    "admin-dashboard",
+    "catalogue",
+    "lead-generation",
+    "blog",
+    "corporate"
+  ],
+  "last_updated": "2026-04-11T13:03:59.121Z"
+}

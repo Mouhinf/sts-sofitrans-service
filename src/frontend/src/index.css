@@ -1,0 +1,140 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-display: Fraunces;
+    --font-body: GeneralSans;
+    --font-mono: JetBrainsMono;
+    --radius: 0.75rem;
+
+    --background: 0.98 0 0;
+    --foreground: 0.12 0 0;
+    --card: 1.0 0 0;
+    --card-foreground: 0.12 0 0;
+    --popover: 1.0 0 0;
+    --popover-foreground: 0.12 0 0;
+
+    --primary: 0.4 0.12 136;
+    --primary-foreground: 0.98 0 0;
+
+    --secondary: 0.42 0.15 249;
+    --secondary-foreground: 0.98 0 0;
+    --muted: 0.92 0 0;
+    --muted-foreground: 0.48 0 0;
+
+    --accent: 0.42 0.15 249;
+    --accent-foreground: 0.98 0 0;
+
+    --destructive: 0.55 0.22 25;
+    --destructive-foreground: 0.98 0 0;
+
+    --border: 0.88 0 0;
+    --input: 0.92 0 0;
+    --ring: 0.4 0.12 136;
+
+    --chart-1: 0.4 0.12 136;
+    --chart-2: 0.42 0.15 249;
+    --chart-3: 0.65 0.15 45;
+    --chart-4: 0.55 0.15 30;
+    --chart-5: 0.48 0.12 200;
+
+    --sidebar: 0.97 0 0;
+    --sidebar-foreground: 0.15 0 0;
+    --sidebar-primary: 0.4 0.12 136;
+    --sidebar-primary-foreground: 0.98 0 0;
+    --sidebar-accent: 0.92 0 0;
+    --sidebar-accent-foreground: 0.25 0 0;
+    --sidebar-border: 0.88 0 0;
+    --sidebar-ring: 0.4 0.12 136;
+  }
+
+  .dark {
+    --background: 0.1 0 0;
+    --foreground: 0.95 0 0;
+    --card: 0.15 0 0;
+    --card-foreground: 0.95 0 0;
+    --popover: 0.2 0 0;
+    --popover-foreground: 0.95 0 0;
+
+    --primary: 0.55 0.12 136;
+    --primary-foreground: 0.1 0 0;
+
+    --secondary: 0.62 0.15 249;
+    --secondary-foreground: 0.1 0 0;
+    --muted: 0.25 0 0;
+    --muted-foreground: 0.62 0 0;
+
+    --accent: 0.62 0.15 249;
+    --accent-foreground: 0.1 0 0;
+
+    --destructive: 0.65 0.19 22;
+    --destructive-foreground: 0.95 0 0;
+
+    --border: 0.22 0 0;
+    --input: 0.2 0 0;
+    --ring: 0.55 0.12 136;
+
+    --chart-1: 0.55 0.12 136;
+    --chart-2: 0.62 0.15 249;
+    --chart-3: 0.68 0.15 45;
+    --chart-4: 0.65 0.15 30;
+    --chart-5: 0.6 0.12 200;
+
+    --sidebar: 0.15 0 0;
+    --sidebar-foreground: 0.92 0 0;
+    --sidebar-primary: 0.55 0.12 136;
+    --sidebar-primary-foreground: 0.1 0 0;
+    --sidebar-accent: 0.25 0 0;
+    --sidebar-accent-foreground: 0.8 0 0;
+    --sidebar-border: 0.22 0 0;
+    --sidebar-ring: 0.55 0.12 136;
+  }
+
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-body antialiased;
+  }
+}
+
+@layer utilities {
+  .transition-smooth {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .shadow-corporate {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+
+  .shadow-elevated {
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
+  }
+
+  .hover-lift {
+    @apply transition-smooth hover:shadow-elevated;
+  }
+}
+
+@font-face {
+  font-family: Fraunces;
+  src: url("/assets/fonts/Fraunces.woff2") format("woff2");
+  font-weight: 400 900;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: GeneralSans;
+  src: url("/assets/fonts/GeneralSans.woff2") format("woff2");
+  font-weight: 300 700;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: JetBrainsMono;
+  src: url("/assets/fonts/JetBrainsMono.woff2") format("woff2");
+  font-weight: 300 800;
+  font-style: normal;
+}
