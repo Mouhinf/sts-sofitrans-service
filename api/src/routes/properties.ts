@@ -4,7 +4,8 @@ import { prisma } from "../lib/prisma.js";
 import { requireAdmin } from "../middleware/auth.js";
 import { HttpError } from "../middleware/error.js";
 import { parseJsonArray, stringifyJsonArray } from "../lib/json.js";
-import type { ImageRef } from "../lib/json.js";
+
+interface ImageRef { url: string; publicId?: string }
 
 const router = Router();
 
