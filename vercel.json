@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "cd src/frontend && pnpm install --prefer-offline && pnpm build",
+  "devCommand": "cd src/frontend && pnpm dev",
+  "installCommand": "cd src/frontend && pnpm install --prefer-offline",
+  "outputDirectory": "src/frontend/dist",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
