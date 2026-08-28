@@ -1,0 +1,34 @@
+services:
+  - type: web
+    name: sts-sofitrans-api
+    runtime: node
+    plan: free
+    rootDir: server
+    buildCommand: npm install && npm run db:deploy && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generate: true
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: ADMIN_EMAIL
+        value: admin@sts-sofitrans.sn
+      - key: ADMIN_PASSWORD
+        generate: true
+      - key: ADMIN_NAME
+        value: Admin STS
+      - key: CORS_ORIGINS
+        value: https://sts-sofitrans.vercel.app,http://localhost:5173
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
