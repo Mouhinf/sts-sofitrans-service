@@ -6,14 +6,5 @@
   "outputDirectory": "src/frontend/dist",
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
-  ],
-  "builds": [
-    {
-      "src": "src/frontend/package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "src/frontend/dist"
-      }
-    }
   ]
 }
