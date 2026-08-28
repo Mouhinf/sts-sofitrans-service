@@ -18,62 +18,80 @@ import settingsRouter from "./routes/settings.js";
 import uploadRouter from "./routes/upload.js";
 import adminRouter from "./routes/admin.js";
 
-const PORT = Number(process.env.PORT ?? 3001);
 const CORS_ORIGINS = (process.env.CORS_ORIGINS ?? "http://localhost:5173")
   .split(",")
   .map((o) => o.trim())
   .filter(Boolean);
 
-const app = express();
+export function createApp(): express.Express {
+  const app = express();
 
-app.use(
-  helmet({
-    crossOriginResourcePolicy: { policy: "cross-origin" },
-    contentSecurityPolicy: false, // we don't serve HTML
-  }),
-);
-app.use(
-  cors({
-    origin: (origin, cb) => {
-      // Allow same-origin (no origin) and configured origins
-      if (!origin || CORS_ORIGINS.includes(origin)) {
-        cb(null, true);
-        return;
-      }
-      cb(new Error(`Origin ${origin} not allowed by CORS`));
-    },
-    credentials: true,
-  }),
-);
-app.use(express.json({ limit: "1mb" }));
-app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: { policy: "cross-origin" },
+      contentSecurityPolicy: false,
+    }),
+  );
+  app.use(
+    cors({
+      origin: (origin, cb) => {
+        if (!origin || CORS_ORIGINS.includes(origin)) {
+          cb(null, true);
+          return;
+        }
+        cb(new Error(`Origin ${origin} not allowed by CORS`));
+      },
+      credentials: true,
+    }),
+  );
+  app.use(express.json({ limit: "1mb" }));
+  app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
 
-// Static files for local-uploaded images
-app.use("/uploads", express.static(path.resolve("uploads")));
+  // Local-uploaded images (only meaningful when Cloudinary is disabled
+  // — on serverless hosts like Vercel, /uploads is not persisted, so
+  // uploads should always go through Cloudinary in production).
+  app.use("/uploads", express.static(path.resolve("uploads")));
 
-app.get("/health", (_req, res) => {
-  res.json({ status: "ok", time: new Date().toISOString() });
-});
+  app.get("/health", (_req, res) => {
+    res.json({ status: "ok", time: new Date().toISOString() });
+  });
 
-// Public
-app.use("/api/auth", authRouter);
-app.use("/api/properties", propertiesRouter);
-app.use("/api/vehicles", vehiclesRouter);
-app.use("/api/trainings", trainingsRouter);
-app.use("/api/enrollments", enrollmentsRouter);
-app.use("/api/blog", blogRouter);
-app.use("/api/messages", messagesRouter);
-app.use("/api/quotes", quotesRouter);
-app.use("/api/bookings", bookingsRouter);
-app.use("/api/newsletter", newsletterRouter);
-app.use("/api/settings", settingsRouter);
-app.use("/api/upload", uploadRouter);
-app.use("/api/admin", adminRouter);
+  // Public
+  app.use("/api/auth", authRouter);
+  app.use("/api/properties", propertiesRouter);
+  app.use("/api/vehicles", vehiclesRouter);
+  app.use("/api/trainings", trainingsRouter);
+  app.use("/api/enrollments", enrollmentsRouter);
+  app.use("/api/blog", blogRouter);
+  app.use("/api/messages", messagesRouter);
+  app.use("/api/quotes", quotesRouter);
+  app.use("/api/bookings", bookingsRouter);
+  app.use("/api/newsletter", newsletterRouter);
+  app.use("/api/settings", settingsRouter);
+  app.use("/api/upload", uploadRouter);
+  app.use("/api/admin", adminRouter);
 
-app.use(notFound);
-app.use(errorHandler);
+  app.use(notFound);
+  app.use(errorHandler);
 
-app.listen(PORT, () => {
-  console.log(`[api] listening on http://localhost:${PORT}`);
-  console.log(`[api] CORS: ${CORS_ORIGINS.join(", ")}`);
-});
+  return app;
+}
+
+// Direct execution starts a long-running HTTP server (dev / standalone
+// hosting). When the module is imported (e.g. by a serverless handler),
+// `createApp` is called by the host instead and `app.listen` is skipped.
+const isMainModule =
+  typeof process !== "undefined" &&
+  process.argv[1] &&
+  process.argv[1].endsWith("index.ts");
+
+if (isMainModule) {
+  const PORT = Number(process.env.PORT ?? 3001);
+  const app = createApp();
+  app.listen(PORT, () => {
+    console.log(`[api] listening on http://localhost:${PORT}`);
+    console.log(`[api] CORS: ${CORS_ORIGINS.join(", ")}`);
+  });
+}
+
+export default createApp;

@@ -1,17 +1,19 @@
 -- CreateTable
 CREATE TABLE "User" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "passwordHash" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "role" TEXT NOT NULL DEFAULT 'admin',
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "User_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "Property" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "title" TEXT NOT NULL,
     "description" TEXT NOT NULL,
     "price" INTEGER NOT NULL,
@@ -22,13 +24,15 @@ CREATE TABLE "Property" (
     "propertyType" TEXT NOT NULL,
     "featured" BOOLEAN NOT NULL DEFAULT false,
     "images" TEXT NOT NULL DEFAULT '[]',
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Property_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "Vehicle" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "title" TEXT NOT NULL,
     "model" TEXT NOT NULL,
     "description" TEXT NOT NULL,
@@ -37,13 +41,15 @@ CREATE TABLE "Vehicle" (
     "pricePerDay" INTEGER NOT NULL,
     "featured" BOOLEAN NOT NULL DEFAULT false,
     "images" TEXT NOT NULL DEFAULT '[]',
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Vehicle_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "Training" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "title" TEXT NOT NULL,
     "description" TEXT NOT NULL,
     "durationDays" INTEGER NOT NULL DEFAULT 1,
@@ -51,24 +57,27 @@ CREATE TABLE "Training" (
     "maxCapacity" INTEGER NOT NULL DEFAULT 20,
     "imageUrl" TEXT NOT NULL DEFAULT '',
     "imagePublicId" TEXT NOT NULL DEFAULT '',
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Training_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "TrainingEnrollment" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "trainingId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "phone" TEXT NOT NULL,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "TrainingEnrollment_trainingId_fkey" FOREIGN KEY ("trainingId") REFERENCES "Training" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "TrainingEnrollment_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "BlogPost" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "title" TEXT NOT NULL,
     "slug" TEXT NOT NULL,
     "description" TEXT NOT NULL,
@@ -78,25 +87,29 @@ CREATE TABLE "BlogPost" (
     "categoryTags" TEXT NOT NULL DEFAULT '[]',
     "featuredImageUrl" TEXT NOT NULL DEFAULT '',
     "featuredImagePublicId" TEXT NOT NULL DEFAULT '',
-    "publishDate" DATETIME,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
+    "publishDate" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "BlogPost_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "Message" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "customerName" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "phone" TEXT NOT NULL DEFAULT '',
     "message" TEXT NOT NULL,
     "status" TEXT NOT NULL DEFAULT 'unread',
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "Message_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "Quote" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "customerName" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "phone" TEXT NOT NULL,
@@ -104,12 +117,14 @@ CREATE TABLE "Quote" (
     "requirements" TEXT NOT NULL DEFAULT '',
     "budgetRange" TEXT NOT NULL DEFAULT '',
     "status" TEXT NOT NULL DEFAULT 'pending',
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "Quote_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "Booking" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "customerName" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "phone" TEXT NOT NULL,
@@ -118,22 +133,25 @@ CREATE TABLE "Booking" (
     "endDate" TEXT NOT NULL,
     "specialRequests" TEXT NOT NULL DEFAULT '',
     "status" TEXT NOT NULL DEFAULT 'pending',
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "Booking_vehicleId_fkey" FOREIGN KEY ("vehicleId") REFERENCES "Vehicle" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "Booking_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "NewsletterSubscriber" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "verified" BOOLEAN NOT NULL DEFAULT false,
-    "subscribedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "unsubscribedAt" DATETIME
+    "subscribedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "unsubscribedAt" TIMESTAMP(3),
+
+    CONSTRAINT "NewsletterSubscriber_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "CompanySettings" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT DEFAULT 1,
+    "id" INTEGER NOT NULL DEFAULT 1,
     "phone" TEXT NOT NULL DEFAULT '',
     "whatsapp" TEXT NOT NULL DEFAULT '',
     "email" TEXT NOT NULL DEFAULT '',
@@ -141,8 +159,11 @@ CREATE TABLE "CompanySettings" (
     "logoUrl" TEXT NOT NULL DEFAULT '',
     "facebookUrl" TEXT NOT NULL DEFAULT '',
     "instagramUrl" TEXT NOT NULL DEFAULT '',
+    "linkedinUrl" TEXT NOT NULL DEFAULT '',
     "youtubeUrl" TEXT NOT NULL DEFAULT '',
-    "updatedAt" DATETIME NOT NULL
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "CompanySettings_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -186,3 +207,9 @@ CREATE INDEX "Booking_vehicleId_idx" ON "Booking"("vehicleId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "NewsletterSubscriber_email_key" ON "NewsletterSubscriber"("email");
+
+-- AddForeignKey
+ALTER TABLE "TrainingEnrollment" ADD CONSTRAINT "TrainingEnrollment_trainingId_fkey" FOREIGN KEY ("trainingId") REFERENCES "Training"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Booking" ADD CONSTRAINT "Booking_vehicleId_fkey" FOREIGN KEY ("vehicleId") REFERENCES "Vehicle"("id") ON DELETE CASCADE ON UPDATE CASCADE;

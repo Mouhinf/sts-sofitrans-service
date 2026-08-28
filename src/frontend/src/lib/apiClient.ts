@@ -4,9 +4,13 @@
 // `VITE_API_URL` (set in `.env` for dev and on Vercel for prod) and the JWT
 // from `localStorage` when present.
 
-const BASE_URL =
-  (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, "") ??
-  "http://localhost:3001";
+const RAW_API_URL = import.meta.env.VITE_API_URL as string | undefined;
+
+// When VITE_API_URL starts with `/` or `http`, treat it as a URL.
+// Falls back to `http://localhost:3001` for local dev.
+const BASE_URL = RAW_API_URL && RAW_API_URL.length > 0
+  ? RAW_API_URL.replace(/\/$/, "")
+  : "http://localhost:3001";
 
 export const TOKEN_KEY = "sts_admin_token";
 
@@ -67,7 +71,16 @@ export async function request<T>(path: string, opts: RequestOpts = {}): Promise<
     if (token) finalHeaders.Authorization = `Bearer ${token}`;
   }
 
-  const url = path.startsWith("http") ? path : `${BASE_URL}${path}`;
+  let url: string;
+  if (path.startsWith("http")) {
+    url = path;
+  } else if (BASE_URL.startsWith("/")) {
+    // Relative base (e.g. `/api`) — strip the duplicate `/api` prefix
+    // from the path before joining.
+    url = BASE_URL + (path.startsWith("/api/") ? path.slice(4) : path);
+  } else {
+    url = BASE_URL + (path.startsWith("/") ? path : `/${path}`);
+  }
   const res = await fetch(url, { method, headers: finalHeaders, body: payload, signal });
 
   if (res.status === 204) {

@@ -1,10 +1,16 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "cd src/frontend && pnpm install --prefer-offline && pnpm build",
+  "buildCommand": "cd server && npm install && npm run db:generate && npm run build && cd ../src/frontend && pnpm install --prefer-offline && pnpm build",
   "devCommand": "cd src/frontend && pnpm dev",
-  "installCommand": "cd src/frontend && pnpm install --prefer-offline",
+  "installCommand": "echo 'install handled in buildCommand'",
   "outputDirectory": "src/frontend/dist",
+  "functions": {
+    "api/[...path].ts": {
+      "maxDuration": 30,
+      "memory": 1024
+    }
+  },
   "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/((?!api/|assets/|favicon\\.).*)", "destination": "/index.html" }
   ]
 }
