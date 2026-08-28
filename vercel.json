@@ -6,11 +6,13 @@
   "outputDirectory": "src/frontend/dist",
   "functions": {
     "api/[...path].ts": {
-      "maxDuration": 30,
-      "memory": 1024
+      "maxDuration": 30
     }
   },
   "rewrites": [
-    { "source": "/((?!api/|assets/|favicon\\.).*)", "destination": "/index.html" }
+    { "source": "/assets/:path*", "destination": "/assets/:path*" },
+    { "source": "/favicon.ico", "destination": "/favicon.ico" },
+    { "source": "/favicon.svg", "destination": "/favicon.svg" },
+    { "source": "/:path*", "destination": "/index.html" }
   ]
 }
