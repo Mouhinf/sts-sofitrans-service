@@ -4,7 +4,7 @@ import { SelectField } from "@/components/ui/SelectField";
 import { TextareaField } from "@/components/ui/TextareaField";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import type { ExternalBlob, VehicleType } from "@/types";
+import type { ImageRef, VehicleType } from "@/types";
 
 export interface VehicleFormState {
   title: string;
@@ -14,7 +14,7 @@ export interface VehicleFormState {
   capacity: string;
   pricePerDay: string;
   featured: boolean;
-  images: ExternalBlob[];
+  images: ImageRef[];
 }
 
 export const VEHICLE_TYPE_OPTIONS = [

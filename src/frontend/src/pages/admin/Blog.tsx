@@ -12,9 +12,9 @@ import {
 import { Badge } from "@/components/ui/badge";
 import {
   useAdminBlogPosts,
-  useAdminCreateBlogPost,
-  useAdminDeleteBlogPost,
-  useAdminUpdateBlogPost,
+  useCreateBlogPost,
+  useDeleteBlogPost,
+  useUpdateBlogPost,
 } from "@/hooks/useBackend";
 import { formatBlogDate } from "@/lib/blog";
 import type { BlogPost, BlogPostInput, PostStatus } from "@/types";
@@ -45,15 +45,16 @@ function toInput(f: BlogFormState): BlogPostInput {
       .split(",")
       .map((t) => t.trim())
       .filter(Boolean),
-    featuredImage: f.featuredImage!,
+    featuredImageUrl: f.featuredImage?.url ?? "",
+    featuredImagePublicId: f.featuredImage?.publicId ?? "",
     publishDate: f.publishDate
-      ? BigInt(new Date(f.publishDate).getTime() * 1_000_000)
-      : undefined,
+      ? new Date(f.publishDate).toISOString()
+      : null,
   };
 }
 
 function fromEntity(p: BlogPost): BlogFormState {
-  const dt = p.publishDate ? new Date(Number(p.publishDate) / 1_000_000) : null;
+  const dt = p.publishDate ? new Date(p.publishDate) : null;
   return {
     title: p.title,
     slug: p.slug,
@@ -65,7 +66,9 @@ function fromEntity(p: BlogPost): BlogFormState {
     publishDate: dt
       ? `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`
       : "",
-    featuredImage: p.featuredImage,
+    featuredImage: p.featuredImageUrl
+      ? { url: p.featuredImageUrl, publicId: p.featuredImagePublicId ?? "" }
+      : null,
   };
 }
 
@@ -85,9 +88,9 @@ function validate(
 
 export default function AdminBlogPage() {
   const { data: posts, isLoading } = useAdminBlogPosts();
-  const createMutation = useAdminCreateBlogPost();
-  const updateMutation = useAdminUpdateBlogPost();
-  const deleteMutation = useAdminDeleteBlogPost();
+  const createMutation = useCreateBlogPost();
+  const updateMutation = useUpdateBlogPost();
+  const deleteMutation = useDeleteBlogPost();
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<BlogPost | null>(null);
@@ -123,7 +126,7 @@ export default function AdminBlogPage() {
     const input = toInput(form);
     try {
       if (editTarget) {
-        await updateMutation.mutateAsync({ id: editTarget.id, input });
+        await updateMutation.mutateAsync({ id: editTarget.id, ...input });
         toast.success("Article mis à jour");
       } else {
         await createMutation.mutateAsync(input);
@@ -161,7 +164,7 @@ export default function AdminBlogPage() {
         items={posts}
         isLoading={isLoading}
         rowOcid={() => "post-row"}
-        getRowKey={(p) => p.id.toString()}
+        getRowKey={(p) => p.id}
         emptyOcid="empty-admin-posts"
         emptyMessage="Aucun article. Créez-en un !"
         skeletonCols={5}
@@ -170,7 +173,7 @@ export default function AdminBlogPage() {
             key: "image",
             label: "Image",
             render: (p) => {
-              const url = p.featuredImage?.getDirectURL?.();
+              const url = p.featuredImageUrl;
               return url ? (
                 <img
                   src={url}

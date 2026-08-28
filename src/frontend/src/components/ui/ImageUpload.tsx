@@ -1,15 +1,18 @@
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Image as ImageIcon, Upload, X } from "lucide-react";
-import { useRef, useState } from "react";
-import { ExternalBlob } from "../../backend";
+import type { ImageRef } from "@/types";
+import { useMutation } from "@tanstack/react-query";
+import { Image as ImageIcon, Loader2, Upload, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { request } from "@/lib/apiClient";
 
 interface ImageUploadProps {
-  value?: ExternalBlob | null;
-  onChange: (blob: ExternalBlob | null) => void;
+  value?: ImageRef | null;
+  onChange: (ref: ImageRef | null) => void;
   label?: string;
   className?: string;
   accept?: string;
+  ocidPrefix?: string;
 }
 
 export function ImageUpload({
@@ -18,42 +21,64 @@ export function ImageUpload({
   label,
   className,
   accept = "image/*",
+  ocidPrefix = "image-upload",
 }: ImageUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [preview, setPreview] = useState<string | null>(
-    value ? value.getDirectURL() : null,
-  );
+  const [preview, setPreview] = useState<string | null>(value?.url ?? null);
   const [isDragging, setIsDragging] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleFile = (file: File) => {
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      const arrayBuffer = e.target?.result as ArrayBuffer;
-      const bytes = new Uint8Array(arrayBuffer);
-      const blob = ExternalBlob.fromBytes(bytes);
-      setPreview(URL.createObjectURL(file));
-      onChange(blob);
-    };
-    reader.readAsArrayBuffer(file);
+  useEffect(() => {
+    setPreview(value?.url ?? null);
+  }, [value?.url]);
+
+  const uploadMutation = useMutation<ImageRef, Error, File>({
+    mutationFn: async (file) => {
+      const form = new FormData();
+      form.append("file", file);
+      return request<ImageRef>(`/api/upload`, {
+        method: "POST",
+        body: form,
+        auth: true,
+      });
+    },
+  });
+
+  const handleFile = async (file: File) => {
+    setError(null);
+    const objectUrl = URL.createObjectURL(file);
+    setPreview(objectUrl);
+    try {
+      const result = await uploadMutation.mutateAsync(file);
+      onChange({ url: result.url, publicId: result.publicId ?? "" });
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Échec du téléchargement de l'image",
+      );
+      setPreview(value?.url ?? null);
+    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) handleFile(file);
+    if (file) void handleFile(file);
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
     const file = e.dataTransfer.files[0];
-    if (file?.type.startsWith("image/")) handleFile(file);
+    if (file?.type.startsWith("image/")) void handleFile(file);
   };
 
   const handleRemove = () => {
     setPreview(null);
+    setError(null);
     onChange(null);
     if (inputRef.current) inputRef.current.value = "";
   };
+
+  const isUploading = uploadMutation.isPending;
 
   return (
     <div className={cn("flex flex-col gap-1.5", className)}>
@@ -77,46 +102,44 @@ export function ImageUpload({
         onDragLeave={() => setIsDragging(false)}
         onDrop={handleDrop}
         aria-label={label ?? "Télécharger une image"}
-        data-ocid="image-upload"
+        data-ocid={`${ocidPrefix}-target`}
       >
         {preview ? (
-          <div className="relative">
+          <div className="flex items-center gap-3">
             <img
               src={preview}
               alt="Aperçu"
-              className="w-full max-h-48 object-contain rounded-md"
+              className="h-20 w-28 object-cover rounded-md border border-border"
             />
-            <Button
-              type="button"
-              variant="destructive"
-              size="icon"
-              className="absolute top-1 right-1 h-6 w-6"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleRemove();
-              }}
-              aria-label="Supprimer l'image"
-            >
-              <X className="h-3 w-3" />
-            </Button>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm text-foreground">
+                Image téléchargée
+                {value?.publicId ? (
+                  <span className="text-muted-foreground"> · {value.publicId}</span>
+                ) : null}
+              </p>
+              {isUploading && (
+                <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1">
+                  <Loader2 className="h-3 w-3 animate-spin" /> Envoi en cours...
+                </p>
+              )}
+            </div>
           </div>
         ) : (
-          <div className="flex flex-col items-center gap-3 text-center">
-            <div className="p-3 rounded-full bg-muted">
-              <ImageIcon className="h-6 w-6 text-muted-foreground" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-foreground">
-                <span className="text-primary">Cliquer</span> ou glisser-déposer
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                PNG, JPG, WEBP jusqu'à 10 Mo
-              </p>
-            </div>
-            <div className="flex items-center gap-2 px-3 py-1.5 text-sm border border-border rounded-md bg-muted pointer-events-none">
-              <Upload className="h-4 w-4" />
-              Choisir un fichier
-            </div>
+          <div className="flex flex-col items-center justify-center text-center gap-2">
+            {isUploading ? (
+              <Loader2 className="h-7 w-7 text-primary animate-spin" />
+            ) : (
+              <div className="p-3 rounded-full bg-primary/10">
+                <Upload className="h-5 w-5 text-primary" />
+              </div>
+            )}
+            <p className="text-sm font-medium text-foreground">
+              {isUploading ? "Envoi en cours..." : "Glissez-déposez ou cliquez"}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              PNG, JPG, WebP · 10 Mo max
+            </p>
           </div>
         )}
       </button>
@@ -124,10 +147,40 @@ export function ImageUpload({
         ref={inputRef}
         type="file"
         accept={accept}
-        className="sr-only"
         onChange={handleInputChange}
-        tabIndex={-1}
+        className="hidden"
+        data-ocid={`${ocidPrefix}-input`}
       />
+      <div className="flex items-center justify-between gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => inputRef.current?.click()}
+          disabled={isUploading}
+          data-ocid={`${ocidPrefix}-button`}
+        >
+          <ImageIcon className="h-4 w-4 mr-1.5" />
+          {preview ? "Remplacer" : "Choisir une image"}
+        </Button>
+        {preview && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={handleRemove}
+            disabled={isUploading}
+            data-ocid={`${ocidPrefix}-remove`}
+          >
+            <X className="h-4 w-4 mr-1.5" /> Retirer
+          </Button>
+        )}
+      </div>
+      {error && (
+        <p className="text-xs text-destructive" data-ocid={`${ocidPrefix}-error`} role="alert">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

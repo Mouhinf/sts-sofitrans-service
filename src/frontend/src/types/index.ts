@@ -1,46 +1,88 @@
 // src/frontend/src/types/index.ts
+//
+// All entity types come from the REST API (Node + Prisma).
 
-// ✅ Types depuis backend.ts (pas backend.d.ts)
+import type {
+  Property as Property,
+  Vehicle as Vehicle,
+  Booking as Booking,
+  Quote as Quote,
+  Message as Message,
+  Training as Training,
+  TrainingEnrollment as TrainingEnrollment,
+  BlogPost as BlogPost,
+  BlogPage as BlogPage,
+  CompanySettings as CompanySettings,
+  NewsletterSubscriber as NewsletterSubscriber,
+} from "./api";
+
+import type {
+  PropertyInput,
+  PropertyType,
+  VehicleInput,
+  VehicleType,
+  BookingInput,
+  BookingStatus,
+  QuoteInput,
+  QuoteStatus,
+  MessageInput,
+  MessageStatus,
+  TrainingInput,
+  BlogPostInput,
+  PostStatus,
+  CompanySettingsInput,
+  ImageRef,
+  AdminUser,
+  LoginResponse,
+} from "./api";
+
 export type {
   Property,
   PropertyInput,
-  PropertyFilter,
+  PropertyType,
   Vehicle,
   VehicleInput,
-  VehicleFilter,
+  VehicleType,
   Booking,
   BookingInput,
+  BookingStatus,
   Quote,
   QuoteInput,
+  QuoteStatus,
   Message,
   MessageInput,
+  MessageStatus,
   Training,
   TrainingInput,
   TrainingEnrollment,
-  EnrollmentInput,
   BlogPost,
   BlogPostInput,
   BlogPage,
-  CompanySettings,
-  DashboardStats,
-  NewsletterSubscriber,
-  Timestamp,
-  Id,
-  ExternalBlob, // ✅ Déplacé ici avec les autres types
-} from "../backend";
-
-// ✅ Enums exportés comme valeurs (pas de changement)
-export {
-  PropertyType,
-  VehicleType,
-  BookingStatus,
-  QuoteStatus,
-  MessageStatus,
   PostStatus,
-  UserRole,
-} from "../backend";
+  CompanySettings,
+  CompanySettingsInput,
+  NewsletterSubscriber,
+  ImageRef,
+  AdminUser,
+  LoginResponse,
+};
 
-// ✅ Types locaux de l'application
+export const PROPERTY_TYPES = ["house", "apartment", "land", "office"] as const;
+export const VEHICLE_TYPES = ["car", "bus", "truck", "minibus"] as const;
+
+export type PropertyFilter = {
+  propertyType?: PropertyType;
+  minPrice?: number;
+  maxPrice?: number;
+};
+
+export type VehicleFilter = {
+  vehicleType?: VehicleType;
+  maxPrice?: number;
+};
+
+// ── Local UI types ─────────────────────────────────────────────
+
 export interface NavItem {
   label: string;
   href: string;

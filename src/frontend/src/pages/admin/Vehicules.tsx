@@ -13,9 +13,9 @@ import {
 import { formatFCFA } from "@/components/shared";
 import { Badge } from "@/components/ui/badge";
 import {
-  useAdminCreateVehicle,
-  useAdminDeleteVehicle,
-  useAdminUpdateVehicle,
+  useCreateVehicle,
+  useDeleteVehicle,
+  useUpdateVehicleById,
   useAdminVehicles,
 } from "@/hooks/useBackend";
 import type { Vehicle, VehicleInput, VehicleType } from "@/types";
@@ -43,8 +43,8 @@ function toInput(f: VehicleFormState): VehicleInput {
     model: f.model,
     description: f.description,
     vehicleType: f.vehicleType as VehicleType,
-    capacity: BigInt(Number(f.capacity) || 1),
-    pricePerDay: BigInt(Number(f.pricePerDay) || 0),
+    capacity: Number(f.capacity) || 1,
+    pricePerDay: Number(f.pricePerDay) || 0,
     featured: f.featured,
     images: f.images,
   };
@@ -56,8 +56,8 @@ function fromEntity(v: Vehicle): VehicleFormState {
     model: v.model,
     description: v.description,
     vehicleType: v.vehicleType,
-    capacity: v.capacity.toString(),
-    pricePerDay: v.pricePerDay.toString(),
+    capacity: String(v.capacity),
+    pricePerDay: String(v.pricePerDay),
     featured: v.featured,
     images: v.images,
   };
@@ -80,9 +80,9 @@ function validate(
 
 export default function AdminVehiculesPage() {
   const { data: vehicles, isLoading } = useAdminVehicles();
-  const createMutation = useAdminCreateVehicle();
-  const updateMutation = useAdminUpdateVehicle();
-  const deleteMutation = useAdminDeleteVehicle();
+  const createMutation = useCreateVehicle();
+  const updateMutation = useUpdateVehicleById();
+  const deleteMutation = useDeleteVehicle();
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Vehicle | null>(null);
@@ -118,7 +118,7 @@ export default function AdminVehiculesPage() {
     const input = toInput(form);
     try {
       if (editTarget) {
-        await updateMutation.mutateAsync({ id: editTarget.id, input });
+        await updateMutation.mutateAsync({ id: editTarget.id, ...input });
         toast.success("Véhicule mis à jour");
       } else {
         await createMutation.mutateAsync(input);
@@ -156,7 +156,7 @@ export default function AdminVehiculesPage() {
         items={vehicles}
         isLoading={isLoading}
         rowOcid={() => "vehicle-row"}
-        getRowKey={(v) => v.id.toString()}
+        getRowKey={(v) => v.id}
         emptyOcid="empty-admin-vehicles"
         emptyMessage="Aucun véhicule. Ajoutez-en un !"
         skeletonCols={8}
@@ -167,7 +167,7 @@ export default function AdminVehiculesPage() {
             render: (v) =>
               v.images[0] ? (
                 <img
-                  src={v.images[0].getDirectURL()}
+                  src={v.images[0]?.url}
                   alt={v.title}
                   className="h-10 w-14 object-cover rounded-md"
                 />
@@ -207,7 +207,7 @@ export default function AdminVehiculesPage() {
             className: "text-right tabular-nums",
             thClassName: "text-right",
             showOn: "lg",
-            render: (v) => v.capacity.toString(),
+            render: (v) => String(v.capacity),
           },
           {
             key: "price",

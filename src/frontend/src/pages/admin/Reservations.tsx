@@ -8,34 +8,33 @@ import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/button";
 import {
   useAdminBookings,
-  useAdminUpdateBookingStatus,
+  useUpdateBookingStatus,
 } from "@/hooks/useBackend";
-import type { Booking } from "@/types";
-import { BookingStatus } from "@/types";
+import type { Booking, BookingStatus } from "@/types";
 import { CheckCircle, Eye, XCircle } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
 const STATUS_LABELS: Record<BookingStatus, string> = {
-  [BookingStatus.pending]: "En attente",
-  [BookingStatus.confirmed]: "Confirmée",
-  [BookingStatus.cancelled]: "Annulée",
+  ["pending"]: "En attente",
+  ["confirmed"]: "Confirmée",
+  ["cancelled"]: "Annulée",
 };
 
 const STATUS_TONES: Record<BookingStatus, StatusTone> = {
-  [BookingStatus.pending]: "amber",
-  [BookingStatus.confirmed]: "primary",
-  [BookingStatus.cancelled]: "destructive",
+  ["pending"]: "amber",
+  ["confirmed"]: "primary",
+  ["cancelled"]: "destructive",
 };
 
 const STATUS_ORDER: BookingStatus[] = [
-  BookingStatus.pending,
-  BookingStatus.confirmed,
-  BookingStatus.cancelled,
+  "pending",
+  "confirmed",
+  "cancelled",
 ];
 
-const formatDate = (ts: bigint) =>
-  new Date(Number(ts) / 1_000_000).toLocaleDateString("fr-FR");
+const formatDate = (ts: string) =>
+  new Date(ts).toLocaleDateString("fr-FR");
 
 function BookingDetailModal({
   booking,
@@ -84,7 +83,7 @@ function BookingDetailModal({
           </div>
           <div>
             <p className="text-xs text-muted-foreground mb-0.5">Véhicule ID</p>
-            <p className="font-mono text-xs">{booking.vehicleId.toString()}</p>
+            <p className="font-mono text-xs">{booking.vehicleId}</p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground mb-0.5">Créée le</p>
@@ -101,10 +100,10 @@ function BookingDetailModal({
             </div>
           ) : null}
         </div>
-        {booking.status === BookingStatus.pending ? (
+        {booking.status === "pending" ? (
           <div className="flex gap-2 pt-2 border-t border-border">
             <Button
-              onClick={() => onStatus(BookingStatus.confirmed)}
+              onClick={() => onStatus("confirmed")}
               className="flex-1"
               data-ocid="modal-confirm-btn"
             >
@@ -113,7 +112,7 @@ function BookingDetailModal({
             </Button>
             <Button
               variant="destructive"
-              onClick={() => onStatus(BookingStatus.cancelled)}
+              onClick={() => onStatus("cancelled")}
               className="flex-1"
               data-ocid="modal-cancel-btn"
             >
@@ -129,7 +128,7 @@ function BookingDetailModal({
 
 export default function AdminReservationsPage() {
   const { data: bookings, isLoading } = useAdminBookings();
-  const updateStatus = useAdminUpdateBookingStatus();
+  const updateStatus = useUpdateBookingStatus();
   const [selected, setSelected] = useState<Booking | null>(null);
 
   async function handleStatus(booking: Booking, status: BookingStatus) {
@@ -173,7 +172,7 @@ export default function AdminReservationsPage() {
         items={bookings}
         isLoading={isLoading}
         rowOcid={(b) => `admin-booking-${b.id}`}
-        getRowKey={(b) => b.id.toString()}
+        getRowKey={(b) => b.id}
         emptyOcid="empty-admin-bookings"
         emptyMessage="Aucune réservation pour l'instant"
         skeletonCols={6}
@@ -199,7 +198,7 @@ export default function AdminReservationsPage() {
             label: "Véhicule ID",
             className: "text-muted-foreground font-mono text-xs",
             showOn: "md",
-            render: (b) => b.vehicleId.toString(),
+            render: (b) => b.vehicleId,
           },
           {
             key: "dates",
@@ -221,12 +220,12 @@ export default function AdminReservationsPage() {
         ]}
         renderActions={(b) => (
           <>
-            {b.status === BookingStatus.pending ? (
+            {b.status === "pending" ? (
               <>
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => handleStatus(b, BookingStatus.confirmed)}
+                  onClick={() => handleStatus(b, "confirmed")}
                   className="text-primary"
                   aria-label="Confirmer"
                   data-ocid={`confirm-booking-${b.id}`}
@@ -236,7 +235,7 @@ export default function AdminReservationsPage() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => handleStatus(b, BookingStatus.cancelled)}
+                  onClick={() => handleStatus(b, "cancelled")}
                   className="text-destructive"
                   aria-label="Annuler"
                   data-ocid={`cancel-booking-${b.id}`}

@@ -90,7 +90,7 @@ function PostHeader({
     <header className="relative w-full h-72 md:h-96 overflow-hidden bg-gradient-to-br from-primary/20 to-secondary/20">
       {image ? (
         <img
-          src={post.featuredImage.getDirectURL()}
+          src={post.featuredImageUrl}
           alt={post.title}
           className="absolute inset-0 w-full h-full object-cover"
         />
@@ -142,7 +142,7 @@ function RelatedSidebar({
         </h2>
         <div className="flex flex-col gap-3">
           {related.map((related) => (
-            <BlogCardCompact key={related.id.toString()} post={related} />
+            <BlogCardCompact key={related.id} post={related} />
           ))}
         </div>
         <div className="mt-6">
@@ -163,7 +163,7 @@ function RelatedSidebar({
 export default function BlogDetailPage() {
   const { slug } = useParams({ strict: false }) as { slug: string };
   const { data: post, isLoading } = useBlogPostBySlug(slug);
-  const { data: latestPage } = useBlogPosts(1n, 10n);
+  const { data: latestPage } = useBlogPosts("published", 1, 10);
 
   const relatedPosts =
     latestPage?.posts.filter((p) => p.slug !== slug).slice(0, 3) ?? [];

@@ -43,11 +43,11 @@ function toInput(f: PropertyFormState): PropertyInput {
   return {
     title: f.title,
     description: f.description,
-    price: BigInt(Number(f.price) || 0),
+    price: Number(f.price) || 0,
     location: f.location,
-    bedrooms: BigInt(Number(f.bedrooms) || 0),
-    bathrooms: BigInt(Number(f.bathrooms) || 0),
-    areaSqm: BigInt(Number(f.areaSqm) || 0),
+    bedrooms: Number(f.bedrooms) || 0,
+    bathrooms: Number(f.bathrooms) || 0,
+    areaSqm: Number(f.areaSqm) || 0,
     propertyType: f.propertyType as PropertyType,
     featured: f.featured,
     images: f.images,
@@ -58,11 +58,11 @@ function fromEntity(p: Property): PropertyFormState {
   return {
     title: p.title,
     description: p.description,
-    price: p.price.toString(),
+    price: String(p.price),
     location: p.location,
-    bedrooms: p.bedrooms.toString(),
-    bathrooms: p.bathrooms.toString(),
-    areaSqm: p.areaSqm.toString(),
+    bedrooms: String(p.bedrooms),
+    bathrooms: String(p.bathrooms),
+    areaSqm: String(p.areaSqm),
     propertyType: p.propertyType,
     featured: p.featured,
     images: p.images,
@@ -122,7 +122,7 @@ export default function AdminProprietesPage() {
     const input = toInput(form);
     try {
       if (editTarget) {
-        await updateMutation.mutateAsync({ id: editTarget.id, input });
+        await updateMutation.mutateAsync({ id: editTarget.id, ...input });
         toast.success("Propriété mise à jour");
       } else {
         await createMutation.mutateAsync(input);
@@ -160,7 +160,7 @@ export default function AdminProprietesPage() {
         items={properties}
         isLoading={isLoading}
         rowOcid={() => "property-row"}
-        getRowKey={(p) => p.id.toString()}
+        getRowKey={(p) => p.id}
         emptyOcid="empty-admin-properties"
         emptyMessage="Aucune propriété. Ajoutez-en une !"
         skeletonCols={7}
@@ -171,7 +171,7 @@ export default function AdminProprietesPage() {
             render: (p) =>
               p.images[0] ? (
                 <img
-                  src={p.images[0].getDirectURL()}
+                  src={p.images[0]?.url}
                   alt={p.title}
                   className="h-10 w-14 object-cover rounded-md"
                 />

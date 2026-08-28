@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
 import type { Vehicle } from "@/types";
+import { cn } from "@/lib/utils";
 import { Truck, Users } from "lucide-react";
 import { motion } from "motion/react";
 import type { KeyboardEvent } from "react";
@@ -9,7 +9,6 @@ import { formatFCFA } from "./format";
 interface VehicleCardProps {
   vehicle: Vehicle;
   index?: number;
-  /** When provided, the card becomes an interactive button. */
   onClick?: () => void;
   className?: string;
 }
@@ -20,7 +19,8 @@ export function VehicleCard({
   onClick,
   className,
 }: VehicleCardProps) {
-  const hasImage = vehicle.images.length > 0;
+  const imageUrl = vehicle.images[0]?.url;
+  const hasImage = !!imageUrl;
   const interactive = !!onClick;
 
   function handleKeyDown(e: KeyboardEvent<HTMLDivElement>) {
@@ -52,7 +52,7 @@ export function VehicleCard({
       <div className="relative h-52 overflow-hidden bg-muted">
         {hasImage ? (
           <img
-            src={vehicle.images[0].getDirectURL()}
+            src={imageUrl}
             alt={vehicle.title}
             className="w-full h-full object-cover group-hover:scale-105 transition-smooth"
             loading="lazy"
@@ -82,7 +82,7 @@ export function VehicleCard({
           </p>
           <span className="flex items-center gap-1 text-muted-foreground text-sm">
             <Users className="w-4 h-4" />
-            {vehicle.capacity.toString()} pers.
+            {vehicle.capacity} pers.
           </span>
         </div>
       </div>

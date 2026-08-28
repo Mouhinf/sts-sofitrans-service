@@ -57,3 +57,13 @@ deps/
 dfx.json
 .vercel
 .env*
+
+# ── Backend (Prisma + Node API) ────────────────────────────────
+api/node_modules/
+api/uploads/
+api/prisma/dev.db
+api/prisma/dev.db-journal
+api/.env
+api/.env.local
+api/dist/
+api/tsconfig.tsbuildinfo

@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import type { Training } from "@/types";
+import { cn } from "@/lib/utils";
 import { Clock, GraduationCap, Users } from "lucide-react";
 import { motion } from "motion/react";
 import type { KeyboardEvent } from "react";
@@ -10,7 +10,6 @@ import { formatFCFA } from "./format";
 interface TrainingCardProps {
   training: Training;
   index?: number;
-  /** When provided, the card becomes an interactive button. */
   onClick?: () => void;
   className?: string;
 }
@@ -21,9 +20,10 @@ export function TrainingCard({
   onClick,
   className,
 }: TrainingCardProps) {
-  const imageUrl = training.image?.getDirectURL();
-  const enrolled = training.enrollments.length;
-  const capacity = Number(training.maxCapacity);
+  const imageUrl = training.imageUrl;
+  const hasImage = !!imageUrl;
+  const enrolled = training.enrollments?.length ?? 0;
+  const capacity = training.maxCapacity;
   const isFull = enrolled >= capacity;
   const interactive = !!onClick;
 
@@ -54,7 +54,7 @@ export function TrainingCard({
       tabIndex={interactive ? 0 : undefined}
     >
       <div className="relative h-44 overflow-hidden bg-muted">
-        {imageUrl ? (
+        {hasImage ? (
           <img
             src={imageUrl}
             alt={training.title}
@@ -84,7 +84,7 @@ export function TrainingCard({
         <div className="flex flex-wrap gap-2 mb-4">
           <Badge variant="outline" className="flex items-center gap-1 text-xs">
             <Clock className="w-3 h-3" />
-            {training.durationDays.toString()} jours
+            {training.durationDays} jours
           </Badge>
           <Badge variant="outline" className="flex items-center gap-1 text-xs">
             <Users className="w-3 h-3" />

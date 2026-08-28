@@ -9,13 +9,15 @@ export const CATEGORY_COLORS: Record<string, string> = {
 };
 
 export function categoryClass(tag: string): string {
-  return CATEGORY_COLORS[tag] ?? "bg-muted text-muted-foreground border-border";
+  return (
+    CATEGORY_COLORS[tag] ?? "bg-muted text-muted-foreground border-border"
+  );
 }
 
-/** Format a backend `Timestamp` (nanoseconds bigint) to a French date. */
-export function formatBlogDate(ts?: bigint): string {
-  if (!ts) return "";
-  const date = new Date(Number(ts) / 1_000_000);
+/** Format a backend ISO date string to a French date. */
+export function formatBlogDate(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const date = new Date(iso);
   return date.toLocaleDateString("fr-FR", {
     day: "numeric",
     month: "long",
@@ -30,6 +32,5 @@ export function truncate(text: string, max: number): string {
 
 /** True if the post has a usable featured image URL. */
 export function hasPostImage(post: BlogPost): boolean {
-  const url = post.featuredImage?.getDirectURL?.();
-  return !!url && url !== "";
+  return !!post.featuredImageUrl && post.featuredImageUrl !== "";
 }

@@ -1,0 +1,180 @@
+// STS SOFITRANS SERVICE — backend schema
+// Mirrors the entities exposed by the Motoko canister, plus a User
+// table for the JWT-based admin auth that replaces Internet Identity.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ── Auth ───────────────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         String   @default("admin") // "admin" | "editor"
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// ── Catalogue ──────────────────────────────────────────────────
+
+model Property {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  price       Int      // FCFA — stored as integer (no bigint in SQLite)
+  location    String
+  bedrooms    Int      @default(0)
+  bathrooms   Int      @default(0)
+  areaSqm     Int      @default(0)
+  propertyType String  // "house" | "apartment" | "land" | "office"
+  featured    Boolean  @default(false)
+  images      String   @default("[]") // JSON array of {url, publicId}
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([propertyType])
+  @@index([featured])
+}
+
+model Vehicle {
+  id          String   @id @default(cuid())
+  title       String
+  model       String
+  description String
+  vehicleType String   // "car" | "bus" | "truck" | "minibus"
+  capacity    Int      @default(1)
+  pricePerDay Int
+  featured    Boolean  @default(false)
+  images      String   @default("[]")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([vehicleType])
+  @@index([featured])
+  bookings    Booking[]
+}
+
+model Training {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  durationDays Int     @default(1)
+  price       Int
+  maxCapacity Int      @default(20)
+  imageUrl    String   @default("")
+  imagePublicId String @default("")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  enrollments TrainingEnrollment[]
+}
+
+model TrainingEnrollment {
+  id        String   @id @default(cuid())
+  trainingId String
+  name      String
+  email     String
+  phone     String
+  createdAt DateTime @default(now())
+
+  training  Training @relation(fields: [trainingId], references: [id], onDelete: Cascade)
+
+  @@index([trainingId])
+}
+
+model BlogPost {
+  id              String   @id @default(cuid())
+  title           String
+  slug            String   @unique
+  description     String
+  content         String   // HTML
+  author          String
+  postStatus      String   @default("draft") // "draft" | "published"
+  categoryTags    String   @default("[]")    // JSON array
+  featuredImageUrl String  @default("")
+  featuredImagePublicId String @default("")
+  publishDate     DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([postStatus])
+  @@index([slug])
+}
+
+// ── Inbox ──────────────────────────────────────────────────────
+
+model Message {
+  id           String   @id @default(cuid())
+  customerName String
+  email        String
+  phone        String   @default("")
+  message      String
+  status       String   @default("unread") // "unread" | "read" | "archived"
+  createdAt    DateTime @default(now())
+
+  @@index([status])
+}
+
+model Quote {
+  id           String   @id @default(cuid())
+  customerName String
+  email        String
+  phone        String
+  serviceType  String
+  requirements String   @default("")
+  budgetRange  String   @default("")
+  status       String   @default("pending") // "pending" | "sent" | "accepted" | "declined"
+  createdAt    DateTime @default(now())
+
+  @@index([status])
+}
+
+model Booking {
+  id              String   @id @default(cuid())
+  customerName    String
+  email           String
+  phone           String
+  vehicleId       String
+  startDate       String
+  endDate         String
+  specialRequests String   @default("")
+  status          String   @default("pending") // "pending" | "confirmed" | "cancelled"
+  createdAt       DateTime @default(now())
+
+  vehicle         Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([vehicleId])
+}
+
+model NewsletterSubscriber {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  verified      Boolean   @default(false)
+  subscribedAt  DateTime  @default(now())
+  unsubscribedAt DateTime?
+}
+
+// ── Site settings (single row) ─────────────────────────────────
+
+model CompanySettings {
+  id            Int      @id @default(1)
+  phone         String   @default("")
+  whatsapp      String   @default("")
+  email         String   @default("")
+  address       String   @default("Zac Mbao Rond Point Sipres, Dakar, Sénégal")
+  logoUrl       String   @default("")
+  facebookUrl   String   @default("")
+  instagramUrl  String   @default("")
+  linkedinUrl   String   @default("")
+  youtubeUrl    String   @default("")
+  updatedAt     DateTime @updatedAt
+}

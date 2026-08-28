@@ -7,11 +7,11 @@ import { useState } from "react";
 
 export default function BlogPage() {
   const [page, setPage] = useState(1);
-  const pageSize = 9n;
-  const { data, isLoading } = useBlogPosts(BigInt(page), pageSize);
+  const pageSize = 9;
+  const { data, isLoading } = useBlogPosts("published", page, pageSize);
 
   const totalPages = data
-    ? Math.ceil(Number(data.total) / Number(pageSize))
+    ? Math.ceil(data.total / pageSize)
     : 1;
 
   return (
@@ -56,7 +56,7 @@ export default function BlogPage() {
             emptyTitle="Aucun article publié pour le moment"
             emptyDescription="Revenez bientôt ! Nos experts préparent des contenus de qualité sur le transport, la logistique et l'immobilier."
             emptyOcid="empty-posts"
-            getKey={(p) => p.id.toString()}
+            getKey={(p) => p.id}
             renderItem={(post, i) => <BlogCard post={post} index={i} />}
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12"
           />

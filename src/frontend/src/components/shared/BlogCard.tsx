@@ -1,14 +1,9 @@
 import { Badge } from "@/components/ui/badge";
-import {
-  categoryClass,
-  formatBlogDate,
-  hasPostImage,
-  truncate,
-} from "@/lib/blog";
 import type { BlogPost } from "@/types";
 import { Link } from "@tanstack/react-router";
 import { ArrowRight, BookOpen, Calendar, User } from "lucide-react";
 import { motion } from "motion/react";
+import { categoryClass, formatBlogDate, hasPostImage, truncate } from "@/lib/blog";
 
 const GRADIENTS = [
   "from-primary/20 to-secondary/20",
@@ -22,16 +17,10 @@ const GRADIENTS = [
 interface BlogCardProps {
   post: BlogPost;
   index?: number;
-  /** Number of characters for the description excerpt. */
   excerptLength?: number;
   className?: string;
 }
 
-/**
- * Catalog-style blog post card. Wrapped in a TanStack Link so the entire
- * card is clickable. Renders the cover image, primary category chip,
- * title, excerpt, author and publication date.
- */
 export function BlogCard({
   post,
   index = 0,
@@ -61,7 +50,7 @@ export function BlogCard({
         >
           {image ? (
             <img
-              src={post.featuredImage.getDirectURL()}
+              src={post.featuredImageUrl}
               alt={post.title}
               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
               loading="lazy"
@@ -109,7 +98,7 @@ export function BlogCard({
             </span>
             {post.publishDate ? (
               <span className="flex items-center gap-1 shrink-0">
-                <Calendar className="h-3.5 w-3.5" />
+                <Calendar className="h-3.5 h-3.5" />
                 {formatBlogDate(post.publishDate)}
               </span>
             ) : null}

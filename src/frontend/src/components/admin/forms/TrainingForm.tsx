@@ -1,7 +1,7 @@
 import { ImageUpload } from "@/components/ui/ImageUpload";
 import { InputField } from "@/components/ui/InputField";
 import { TextareaField } from "@/components/ui/TextareaField";
-import type { ExternalBlob } from "@/types";
+import type { ImageRef } from "@/types";
 
 export interface TrainingFormState {
   title: string;
@@ -9,7 +9,7 @@ export interface TrainingFormState {
   durationDays: string;
   price: string;
   maxCapacity: string;
-  image: ExternalBlob | null;
+  image: ImageRef | null;
 }
 
 interface TrainingFormProps {

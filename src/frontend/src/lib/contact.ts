@@ -1,4 +1,4 @@
-import type { CompanySettings } from "@/backend";
+import type { CompanySettings } from "@/types";
 
 /**
  * Sanitises a raw phone string into the international E.164 digit-only form

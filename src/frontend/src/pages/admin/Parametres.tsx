@@ -21,15 +21,17 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 const EMPTY: CompanySettings = {
+  id: 1,
+  updatedAt: "",
   phone: "",
   whatsapp: "",
   email: "",
   address: "Zac Mbao Rond Point Sipres, Dakar, Sénégal",
   logoUrl: "",
-  facebookUrl: undefined,
-  instagramUrl: undefined,
-  linkedinUrl: undefined,
-  youtubeUrl: undefined,
+  facebookUrl: "",
+  instagramUrl: "",
+  linkedinUrl: "",
+  youtubeUrl: "",
 };
 
 export default function AdminParametresPage() {
@@ -42,21 +44,23 @@ export default function AdminParametresPage() {
   useEffect(() => {
     if (settings) {
       setForm({
+        id: settings.id,
+        updatedAt: settings.updatedAt,
         phone: settings.phone ?? "",
         whatsapp: settings.whatsapp ?? "",
         email: settings.email ?? "",
         address: settings.address ?? "",
         logoUrl: settings.logoUrl ?? "",
-        facebookUrl: settings.facebookUrl,
-        instagramUrl: settings.instagramUrl,
-        linkedinUrl: settings.linkedinUrl,
-        youtubeUrl: settings.youtubeUrl,
+        facebookUrl: settings.facebookUrl ?? "",
+        instagramUrl: settings.instagramUrl ?? "",
+        linkedinUrl: settings.linkedinUrl ?? "",
+        youtubeUrl: settings.youtubeUrl ?? "",
       });
     }
   }, [settings]);
 
   const set = (k: keyof CompanySettings, v: string) =>
-    setForm((f) => ({ ...f, [k]: v || undefined }));
+    setForm((f) => ({ ...f, [k]: v }));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,7 +69,17 @@ export default function AdminParametresPage() {
       return;
     }
     try {
-      await updateMutation.mutateAsync(form);
+      await updateMutation.mutateAsync({
+        phone: form.phone,
+        whatsapp: form.whatsapp,
+        email: form.email,
+        address: form.address,
+        logoUrl: form.logoUrl,
+        facebookUrl: form.facebookUrl,
+        instagramUrl: form.instagramUrl,
+        linkedinUrl: form.linkedinUrl,
+        youtubeUrl: form.youtubeUrl,
+      });
       setSaved(true);
       toast.success("Paramètres enregistrés avec succès");
       setTimeout(() => setSaved(false), 3000);

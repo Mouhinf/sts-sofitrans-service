@@ -4,7 +4,7 @@ import { SelectField } from "@/components/ui/SelectField";
 import { TextareaField } from "@/components/ui/TextareaField";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import type { ExternalBlob, PropertyType } from "@/types";
+import type { ImageRef, PropertyType } from "@/types";
 
 export interface PropertyFormState {
   title: string;
@@ -16,7 +16,7 @@ export interface PropertyFormState {
   areaSqm: string;
   propertyType: PropertyType;
   featured: boolean;
-  images: ExternalBlob[];
+  images: ImageRef[];
 }
 
 export const PROPERTY_TYPE_OPTIONS = [

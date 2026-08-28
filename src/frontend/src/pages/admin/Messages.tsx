@@ -10,8 +10,7 @@ import {
   useAdminMessages,
   useAdminUpdateMessageStatus,
 } from "@/hooks/useBackend";
-import type { Message } from "@/types";
-import { MessageStatus } from "@/types";
+import type { Message, MessageStatus } from "@/types";
 import { Archive, Eye, Mail } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -30,8 +29,8 @@ const STATUS_TONES: Record<string, StatusTone> = {
   archived: "muted",
 };
 
-const formatDate = (ts: bigint) =>
-  new Date(Number(ts) / 1_000_000).toLocaleString("fr-FR", {
+const formatDate = (ts: string) =>
+  new Date(ts).toLocaleString("fr-FR", {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -39,9 +38,9 @@ const formatDate = (ts: bigint) =>
 
 const FILTERS: { value: Filter; label: string }[] = [
   { value: "all", label: "Tous" },
-  { value: MessageStatus.unread, label: "Non lus" },
-  { value: MessageStatus.read, label: "Lus" },
-  { value: MessageStatus.archived, label: "Archivés" },
+  { value: "unread", label: "Non lus" },
+  { value: "read", label: "Lus" },
+  { value: "archived", label: "Archivés" },
 ];
 
 function MessageDetailModal({
@@ -95,22 +94,22 @@ function MessageDetailModal({
           </p>
         </div>
         <div className="flex gap-2 flex-wrap">
-          {message.status !== MessageStatus.read ? (
+          {message.status !== "read" ? (
             <Button
               size="sm"
               variant="outline"
-              onClick={() => onStatus(MessageStatus.read)}
+              onClick={() => onStatus("read")}
               data-ocid="modal-mark-read-btn"
             >
               <Mail className="h-3.5 w-3.5 mr-1.5" />
               Marquer comme lu
             </Button>
           ) : null}
-          {message.status !== MessageStatus.archived ? (
+          {message.status !== "archived" ? (
             <Button
               size="sm"
               variant="outline"
-              onClick={() => onStatus(MessageStatus.archived)}
+              onClick={() => onStatus("archived")}
               data-ocid="modal-archive-btn"
             >
               <Archive className="h-3.5 w-3.5 mr-1.5" />
@@ -174,7 +173,7 @@ export default function AdminMessagesPage() {
         items={filtered}
         isLoading={isLoading}
         rowOcid={(m) => `admin-message-${m.id}`}
-        getRowKey={(m) => m.id.toString()}
+        getRowKey={(m) => m.id}
         emptyOcid="empty-admin-messages"
         emptyMessage="Aucun message dans cette catégorie"
         skeletonCols={7}
@@ -185,7 +184,7 @@ export default function AdminMessagesPage() {
             render: (m) => (
               <span
                 className={
-                  m.status === MessageStatus.unread
+                  m.status === "unread"
                     ? "font-medium text-foreground"
                     : "text-foreground"
                 }
@@ -235,22 +234,22 @@ export default function AdminMessagesPage() {
         ]}
         renderActions={(m) => (
           <>
-            {m.status !== MessageStatus.read ? (
+            {m.status !== "read" ? (
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => handleStatus(m, MessageStatus.read)}
+                onClick={() => handleStatus(m, "read")}
                 aria-label="Marquer comme lu"
                 data-ocid={`mark-read-${m.id}`}
               >
                 <Mail className="h-4 w-4" />
               </Button>
             ) : null}
-            {m.status !== MessageStatus.archived ? (
+            {m.status !== "archived" ? (
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => handleStatus(m, MessageStatus.archived)}
+                onClick={() => handleStatus(m, "archived")}
                 aria-label="Archiver"
                 data-ocid={`archive-msg-${m.id}`}
               >

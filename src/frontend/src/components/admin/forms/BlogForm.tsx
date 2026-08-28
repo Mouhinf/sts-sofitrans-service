@@ -3,7 +3,7 @@ import { InputField } from "@/components/ui/InputField";
 import { RichTextEditor } from "@/components/ui/RichTextEditor";
 import { SelectField } from "@/components/ui/SelectField";
 import { TextareaField } from "@/components/ui/TextareaField";
-import type { ExternalBlob, PostStatus } from "@/types";
+import type { ImageRef, PostStatus } from "@/types";
 
 export interface BlogFormState {
   title: string;
@@ -14,7 +14,7 @@ export interface BlogFormState {
   postStatus: PostStatus;
   tags: string;
   publishDate: string;
-  featuredImage: ExternalBlob | null;
+  featuredImage: ImageRef | null;
 }
 
 export const POST_STATUS_OPTIONS = [

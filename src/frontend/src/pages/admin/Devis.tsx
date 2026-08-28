@@ -6,35 +6,34 @@ import {
 } from "@/components/admin";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/button";
-import { useAdminQuotes, useAdminUpdateQuoteStatus } from "@/hooks/useBackend";
-import type { Quote } from "@/types";
-import { QuoteStatus } from "@/types";
+import { useAdminQuotes, useUpdateQuoteStatus } from "@/hooks/useBackend";
+import type { Quote, QuoteStatus } from "@/types";
 import { CheckCircle, Eye, Send, XCircle } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
 const STATUS_LABELS: Record<QuoteStatus, string> = {
-  [QuoteStatus.pending]: "En attente",
-  [QuoteStatus.sent]: "Envoyé",
-  [QuoteStatus.accepted]: "Accepté",
-  [QuoteStatus.declined]: "Refusé",
+  ["pending"]: "En attente",
+  ["sent"]: "Envoyé",
+  ["accepted"]: "Accepté",
+  ["declined"]: "Refusé",
 };
 
 const STATUS_TONES: Record<QuoteStatus, StatusTone> = {
-  [QuoteStatus.pending]: "amber",
-  [QuoteStatus.sent]: "secondary",
-  [QuoteStatus.accepted]: "primary",
-  [QuoteStatus.declined]: "destructive",
+  ["pending"]: "amber",
+  ["sent"]: "secondary",
+  ["accepted"]: "primary",
+  ["declined"]: "destructive",
 };
 
-const formatDate = (ts: bigint) =>
-  new Date(Number(ts) / 1_000_000).toLocaleDateString("fr-FR");
+const formatDate = (ts: string) =>
+  new Date(ts).toLocaleDateString("fr-FR");
 
 const STATUS_ORDER: QuoteStatus[] = [
-  QuoteStatus.pending,
-  QuoteStatus.sent,
-  QuoteStatus.accepted,
-  QuoteStatus.declined,
+  "pending",
+  "sent",
+  "accepted",
+  "declined",
 ];
 
 function QuoteDetailModal({
@@ -100,23 +99,23 @@ function QuoteDetailModal({
           </div>
         </div>
         <div className="flex gap-2 flex-wrap pt-2 border-t border-border">
-          {quote.status === QuoteStatus.pending ? (
+          {quote.status === "pending" ? (
             <Button
               size="sm"
               variant="outline"
-              onClick={() => onStatus(QuoteStatus.sent)}
+              onClick={() => onStatus("sent")}
               data-ocid="modal-send-btn"
             >
               <Send className="h-3.5 w-3.5 mr-1.5" />
               Marquer envoyé
             </Button>
           ) : null}
-          {quote.status === QuoteStatus.pending ||
-          quote.status === QuoteStatus.sent ? (
+          {quote.status === "pending" ||
+          quote.status === "sent" ? (
             <>
               <Button
                 size="sm"
-                onClick={() => onStatus(QuoteStatus.accepted)}
+                onClick={() => onStatus("accepted")}
                 data-ocid="modal-accept-btn"
               >
                 <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
@@ -125,7 +124,7 @@ function QuoteDetailModal({
               <Button
                 size="sm"
                 variant="destructive"
-                onClick={() => onStatus(QuoteStatus.declined)}
+                onClick={() => onStatus("declined")}
                 data-ocid="modal-decline-btn"
               >
                 <XCircle className="h-3.5 w-3.5 mr-1.5" />
@@ -141,7 +140,7 @@ function QuoteDetailModal({
 
 export default function AdminDevisPage() {
   const { data: quotes, isLoading } = useAdminQuotes();
-  const updateStatus = useAdminUpdateQuoteStatus();
+  const updateStatus = useUpdateQuoteStatus();
   const [selected, setSelected] = useState<Quote | null>(null);
 
   async function handleStatus(quote: Quote, status: QuoteStatus) {
@@ -188,7 +187,7 @@ export default function AdminDevisPage() {
         items={quotes}
         isLoading={isLoading}
         rowOcid={(q) => `admin-quote-${q.id}`}
-        getRowKey={(q) => q.id.toString()}
+        getRowKey={(q) => q.id}
         emptyOcid="empty-admin-quotes"
         emptyMessage="Aucun devis pour l'instant"
         skeletonCols={7}
@@ -243,11 +242,11 @@ export default function AdminDevisPage() {
         ]}
         renderActions={(q) => (
           <>
-            {q.status === QuoteStatus.pending ? (
+            {q.status === "pending" ? (
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => handleStatus(q, QuoteStatus.sent)}
+                onClick={() => handleStatus(q, "sent")}
                 className="text-secondary"
                 aria-label="Marquer envoyé"
                 data-ocid={`send-quote-${q.id}`}
@@ -255,13 +254,13 @@ export default function AdminDevisPage() {
                 <Send className="h-4 w-4" />
               </Button>
             ) : null}
-            {q.status === QuoteStatus.pending ||
-            q.status === QuoteStatus.sent ? (
+            {q.status === "pending" ||
+            q.status === "sent" ? (
               <>
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => handleStatus(q, QuoteStatus.accepted)}
+                  onClick={() => handleStatus(q, "accepted")}
                   className="text-primary"
                   aria-label="Accepter"
                   data-ocid={`accept-quote-${q.id}`}
@@ -271,7 +270,7 @@ export default function AdminDevisPage() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => handleStatus(q, QuoteStatus.declined)}
+                  onClick={() => handleStatus(q, "declined")}
                   className="text-destructive"
                   aria-label="Refuser"
                   data-ocid={`decline-quote-${q.id}`}

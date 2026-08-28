@@ -98,7 +98,7 @@ function EnrollmentForm({
         <div className="flex flex-wrap gap-4 mt-1 text-xs text-muted-foreground">
           <span className="flex items-center gap-1">
             <Clock className="w-3 h-3" />
-            {training.durationDays.toString()} jours
+            {String(training.durationDays)} jours
           </span>
           <span className="font-semibold text-primary">
             {formatFCFA(training.price)}

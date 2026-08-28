@@ -1,18 +1,13 @@
-import { formatBlogDate, hasPostImage } from "@/lib/blog";
 import type { BlogPost } from "@/types";
 import { Link } from "@tanstack/react-router";
 import { ArrowRight, BookOpen } from "lucide-react";
+import { formatBlogDate, hasPostImage } from "@/lib/blog";
 
 interface BlogCardCompactProps {
   post: BlogPost;
   className?: string;
 }
 
-/**
- * Sidebar-friendly blog post card. Renders as a horizontal link with
- * thumbnail, title, optional date and a chevron. Used for "related posts"
- * rails.
- */
 export function BlogCardCompact({ post, className }: BlogCardCompactProps) {
   const image = hasPostImage(post);
   return (
@@ -25,7 +20,7 @@ export function BlogCardCompact({ post, className }: BlogCardCompactProps) {
       <div className="h-16 w-20 rounded-md overflow-hidden shrink-0 bg-gradient-to-br from-primary/10 to-secondary/10">
         {image ? (
           <img
-            src={post.featuredImage.getDirectURL()}
+            src={post.featuredImageUrl}
             alt={post.title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             loading="lazy"

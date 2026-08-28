@@ -10,7 +10,7 @@ export function NewsletterSection() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (email.trim()) mutate(email.trim());
+    if (email.trim()) mutate({ email: email.trim() });
   };
 
   return (

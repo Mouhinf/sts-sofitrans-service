@@ -1,390 +1,649 @@
-import { useActor } from "@caffeineai/core-infrastructure";
+// src/frontend/src/hooks/useBackend.ts
+//
+// React Query bindings for the REST API. Every public + admin operation
+// previously exposed by the Motoko canister is re-exported here so the
+// existing call sites (admin pages, public service pages, etc.) keep
+// compiling while now talking to Node + Prisma.
+
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createActor } from "../backend";
-import type {
-  BlogPostInput,
-  BookingInput,
-  BookingStatus,
-  CompanySettings,
-  EnrollmentInput,
-  Id,
-  MessageInput,
-  MessageStatus,
-  PostStatus,
-  PropertyFilter,
-  PropertyInput,
-  QuoteInput,
-  QuoteStatus,
-  TrainingInput,
-  VehicleFilter,
-  VehicleInput,
-} from "../types";
+import {
+  type BlogPage,
+  type BlogPost,
+  type BlogPostInput,
+  type Booking,
+  type BookingInput,
+  type BookingStatus,
+  type CompanySettings,
+  type CompanySettingsInput,
+  type Message,
+  type MessageStatus,
+  type NewsletterSubscriber,
+  type PostStatus,
+  type Property,
+  type PropertyFilter,
+  type PropertyInput,
+  type PropertyType,
+  type Quote,
+  type QuoteInput,
+  type QuoteStatus,
+  type Training,
+  type TrainingEnrollment,
+  type TrainingInput,
+  type Vehicle,
+  type VehicleFilter,
+  type VehicleInput,
+  type VehicleType,
+} from "@/types";
+import { buildQuery, request } from "@/lib/apiClient";
 
-function useBackendActor() {
-  return useActor(createActor);
-}
-
-// === PUBLIC QUERIES ===
+// ── Public queries ─────────────────────────────────────────────
 
 export function useProperties(filter: PropertyFilter = {}) {
-  const { actor, isFetching } = useBackendActor();
-  return useQuery({
+  return useQuery<Property[]>({
     queryKey: ["properties", filter],
-    queryFn: () => actor!.listProperties(filter),
-    enabled: !!actor && !isFetching,
+    queryFn: () =>
+      request<Property[]>(
+        `/api/properties${buildQuery({
+          propertyType: filter.propertyType,
+          minPrice: filter.minPrice,
+          maxPrice: filter.maxPrice,
+        })}`,
+      ),
   });
 }
 
-export function useProperty(id: Id | undefined) {
-  const { actor, isFetching } = useBackendActor();
-  return useQuery({
-    queryKey: ["property", id?.toString()],
-    queryFn: () => actor!.getProperty(id!),
-    enabled: !!actor && !isFetching && id !== undefined,
+export function useProperty(id: string | undefined) {
+  return useQuery<Property>({
+    queryKey: ["property", id],
+    queryFn: () => request<Property>(`/api/properties/${id}`),
+    enabled: Boolean(id),
   });
 }
 
 export function useVehicles(filter: VehicleFilter = {}) {
-  const { actor, isFetching } = useBackendActor();
-  return useQuery({
+  return useQuery<Vehicle[]>({
     queryKey: ["vehicles", filter],
-    queryFn: () => actor!.listVehicles(filter),
-    enabled: !!actor && !isFetching,
+    queryFn: () =>
+      request<Vehicle[]>(
+        `/api/vehicles${buildQuery({
+          vehicleType: filter.vehicleType,
+          maxPrice: filter.maxPrice,
+        })}`,
+      ),
   });
 }
 
-export function useVehicle(id: Id | undefined) {
-  const { actor, isFetching } = useBackendActor();
-  return useQuery({
-    queryKey: ["vehicle", id?.toString()],
-    queryFn: () => actor!.getVehicle(id!),
-    enabled: !!actor && !isFetching && id !== undefined,
+export function useVehicle(id: string | undefined) {
+  return useQuery<Vehicle>({
+    queryKey: ["vehicle", id],
+    queryFn: () => request<Vehicle>(`/api/vehicles/${id}`),
+    enabled: Boolean(id),
   });
 }
 
 export function useTrainings() {
-  const { actor, isFetching } = useBackendActor();
-  return useQuery({
+  return useQuery<Training[]>({
     queryKey: ["trainings"],
-    queryFn: () => actor!.listTrainings(),
-    enabled: !!actor && !isFetching,
+    queryFn: () => request<Training[]>(`/api/trainings`),
   });
 }
 
-export function useTraining(id: Id | undefined) {
-  const { actor, isFetching } = useBackendActor();
-  return useQuery({
-    queryKey: ["training", id?.toString()],
-    queryFn: () => actor!.getTraining(id!),
-    enabled: !!actor && !isFetching && id !== undefined,
+export function useTraining(id: string | undefined) {
+  return useQuery<Training>({
+    queryKey: ["training", id],
+    queryFn: () => request<Training>(`/api/trainings/${id}`),
+    enabled: Boolean(id),
   });
 }
 
-export function useBlogPosts(page = 1n, pageSize = 9n) {
-  const { actor, isFetching } = useBackendActor();
-  return useQuery({
-    queryKey: ["blogPosts", page.toString(), pageSize.toString()],
-    queryFn: () => actor!.listBlogPosts(page, pageSize),
-    enabled: !!actor && !isFetching,
+export function useBlogPosts(
+  status: PostStatus | "all" = "published",
+  page = 1,
+  pageSize = 100,
+) {
+  return useQuery<BlogPage>({
+    queryKey: ["blog", status, page, pageSize],
+    queryFn: () =>
+      request<BlogPage>(
+        `/api/blog${buildQuery({
+          status: status === "all" ? undefined : status,
+          page,
+          pageSize,
+        })}`,
+      ),
   });
 }
 
 export function useBlogPostBySlug(slug: string | undefined) {
-  const { actor, isFetching } = useBackendActor();
-  return useQuery({
-    queryKey: ["blogPost", slug],
-    queryFn: () => actor!.getBlogPostBySlug(slug!),
-    enabled: !!actor && !isFetching && !!slug,
+  return useQuery<BlogPost>({
+    queryKey: ["blog", "slug", slug],
+    queryFn: () => request<BlogPost>(`/api/blog/by-slug/${slug}`),
+    enabled: Boolean(slug),
+    retry: 1,
   });
 }
 
 export function useCompanySettings() {
-  const { actor, isFetching } = useBackendActor();
-  return useQuery({
-    queryKey: ["companySettings"],
-    queryFn: () => actor!.getCompanySettings(),
-    enabled: !!actor && !isFetching,
+  return useQuery<CompanySettings>({
+    queryKey: ["settings"],
+    queryFn: () => request<CompanySettings>(`/api/settings`),
+    staleTime: 5 * 60_000,
   });
 }
 
-// === PUBLIC MUTATIONS ===
-
-export function useSubmitMessage() {
-  const { actor } = useBackendActor();
-  return useMutation({
-    mutationFn: (input: MessageInput) => actor!.submitMessage(input),
-  });
-}
-
-export function useSubmitQuote() {
-  const { actor } = useBackendActor();
-  return useMutation({
-    mutationFn: (input: QuoteInput) => actor!.submitQuote(input),
-  });
-}
-
-export function useSubmitBooking() {
-  const { actor } = useBackendActor();
-  return useMutation({
-    mutationFn: (input: BookingInput) => actor!.submitBooking(input),
-  });
-}
-
-export function useEnrollInTraining() {
-  const { actor } = useBackendActor();
-  return useMutation({
-    mutationFn: (input: EnrollmentInput) => actor!.enrollInTraining(input),
-  });
-}
-
-export function useSubscribeNewsletter() {
-  const { actor } = useBackendActor();
-  return useMutation({
-    mutationFn: (email: string) => actor!.subscribeNewsletter(email),
-  });
-}
-
-// === ADMIN QUERIES ===
-
-export function useAdminDashboardStats() {
-  const { actor, isFetching } = useBackendActor();
-  return useQuery({
-    queryKey: ["adminDashboardStats"],
-    queryFn: () => actor!.adminGetDashboardStats(),
-    enabled: !!actor && !isFetching,
-  });
-}
+// ── Admin queries ──────────────────────────────────────────────
 
 export function useAdminProperties() {
-  const { actor, isFetching } = useBackendActor();
-  return useQuery({
-    queryKey: ["adminProperties"],
-    queryFn: () => actor!.adminListProperties(),
-    enabled: !!actor && !isFetching,
+  return useQuery<Property[]>({
+    queryKey: ["admin", "properties"],
+    queryFn: () => request<Property[]>(`/api/properties/admin/list`, { auth: true }),
   });
 }
 
 export function useAdminVehicles() {
-  const { actor, isFetching } = useBackendActor();
-  return useQuery({
-    queryKey: ["adminVehicles"],
-    queryFn: () => actor!.adminListVehicles(),
-    enabled: !!actor && !isFetching,
+  return useQuery<Vehicle[]>({
+    queryKey: ["admin", "vehicles"],
+    queryFn: () => request<Vehicle[]>(`/api/vehicles/admin/list`, { auth: true }),
   });
 }
 
 export function useAdminTrainings() {
-  const { actor, isFetching } = useBackendActor();
-  return useQuery({
-    queryKey: ["adminTrainings"],
-    queryFn: () => actor!.adminListTrainings(),
-    enabled: !!actor && !isFetching,
+  return useQuery<Training[]>({
+    queryKey: ["admin", "trainings"],
+    queryFn: () => request<Training[]>(`/api/trainings/admin/list`, { auth: true }),
   });
 }
 
 export function useAdminBlogPosts() {
-  const { actor, isFetching } = useBackendActor();
-  return useQuery({
-    queryKey: ["adminBlogPosts"],
-    queryFn: () => actor!.adminListBlogPosts(),
-    enabled: !!actor && !isFetching,
+  return useQuery<BlogPost[]>({
+    queryKey: ["admin", "blog"],
+    queryFn: () => request<BlogPost[]>(`/api/blog/admin/list`, { auth: true }),
+  });
+}
+
+export function useAdminEnrollments(trainingId: string | undefined) {
+  return useQuery<TrainingEnrollment[]>({
+    queryKey: ["admin", "enrollments", trainingId],
+    queryFn: () =>
+      request<TrainingEnrollment[]>(
+        `/api/enrollments/admin/by-training/${trainingId}`,
+        { auth: true },
+      ),
+    enabled: Boolean(trainingId),
   });
 }
 
 export function useAdminMessages() {
-  const { actor, isFetching } = useBackendActor();
-  return useQuery({
-    queryKey: ["adminMessages"],
-    queryFn: () => actor!.adminListMessages(),
-    enabled: !!actor && !isFetching,
-  });
-}
-
-export function useAdminBookings() {
-  const { actor, isFetching } = useBackendActor();
-  return useQuery({
-    queryKey: ["adminBookings"],
-    queryFn: () => actor!.adminListBookings(),
-    enabled: !!actor && !isFetching,
+  return useQuery<Message[]>({
+    queryKey: ["admin", "messages"],
+    queryFn: () => request<Message[]>(`/api/messages/admin/list`, { auth: true }),
   });
 }
 
 export function useAdminQuotes() {
-  const { actor, isFetching } = useBackendActor();
-  return useQuery({
-    queryKey: ["adminQuotes"],
-    queryFn: () => actor!.adminListQuotes(),
-    enabled: !!actor && !isFetching,
+  return useQuery<Quote[]>({
+    queryKey: ["admin", "quotes"],
+    queryFn: () => request<Quote[]>(`/api/quotes/admin/list`, { auth: true }),
   });
 }
 
-export function useAdminSubscribers() {
-  const { actor, isFetching } = useBackendActor();
-  return useQuery({
-    queryKey: ["adminSubscribers"],
-    queryFn: () => actor!.adminListSubscribers(),
-    enabled: !!actor && !isFetching,
+export function useAdminBookings() {
+  return useQuery<Booking[]>({
+    queryKey: ["admin", "bookings"],
+    queryFn: () => request<Booking[]>(`/api/bookings/admin/list`, { auth: true }),
   });
 }
 
-// === ADMIN MUTATIONS ===
+export function useAdminNewsletterSubscribers() {
+  return useQuery<NewsletterSubscriber[]>({
+    queryKey: ["admin", "newsletter"],
+    queryFn: () =>
+      request<NewsletterSubscriber[]>(`/api/newsletter/admin/list`, { auth: true }),
+  });
+}
+
+export function useAdminNewsletterCount() {
+  return useQuery<{ count: number }>({
+    queryKey: ["admin", "newsletter", "count"],
+    queryFn: () =>
+      request<{ count: number }>(`/api/newsletter/admin/count`, { auth: true }),
+  });
+}
+
+// ── Public mutations (no auth) ─────────────────────────────────
+
+export function useCreateMessage() {
+  return useMutation<Message, Error, {
+    customerName: string;
+    email: string;
+    phone: string;
+    message: string;
+  }>({
+    mutationFn: (data) =>
+      request<Message>(`/api/messages`, { method: "POST", body: data }),
+  });
+}
+
+export function useCreateQuote() {
+  return useMutation<Quote, Error, QuoteInput>({
+    mutationFn: (data) =>
+      request<Quote>(`/api/quotes`, { method: "POST", body: data }),
+  });
+}
+
+export function useCreateBooking() {
+  return useMutation<Booking, Error, BookingInput>({
+    mutationFn: (data) =>
+      request<Booking>(`/api/bookings`, { method: "POST", body: data }),
+  });
+}
+
+export function useCreateEnrollment() {
+  return useMutation<TrainingEnrollment, Error, {
+    trainingId: string;
+    name: string;
+    email: string;
+    phone: string;
+  }>({
+    mutationFn: (data) =>
+      request<TrainingEnrollment>(`/api/enrollments`, {
+        method: "POST",
+        body: data,
+      }),
+  });
+}
+
+export function useSubscribeNewsletter() {
+  return useMutation<NewsletterSubscriber, Error, { email: string }>({
+    mutationFn: (data) =>
+      request<NewsletterSubscriber>(`/api/newsletter/subscribe`, {
+        method: "POST",
+        body: data,
+      }),
+  });
+}
+
+// ── Admin mutations (require auth) ─────────────────────────────
+
+function adminMutation<TInput, TResult>(
+  path: string,
+  method: "POST" | "PUT" | "DELETE" = "POST",
+  invalidate: string[][] = [],
+) {
+  return () => {
+    const qc = useQueryClient();
+    return useMutation<TResult, Error, TInput>({
+      mutationFn: (data) =>
+        request<TResult>(path, { method, body: data as unknown as object, auth: true }),
+      onSuccess: () => {
+        for (const key of invalidate) qc.invalidateQueries({ queryKey: key });
+      },
+    });
+  };
+}
+
+export function useCreateProperty() {
+  const qc = useQueryClient();
+  return useMutation<Property, Error, PropertyInput>({
+    mutationFn: (data) =>
+      request<Property>(`/api/properties/admin`, {
+        method: "POST",
+        body: data,
+        auth: true,
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["properties"] });
+      qc.invalidateQueries({ queryKey: ["admin", "properties"] });
+    },
+  });
+}
+
+export function useUpdatePropertyById() {
+  const qc = useQueryClient();
+  return useMutation<Property, Error, { id: string } & Partial<PropertyInput>>({
+    mutationFn: ({ id, ...data }) =>
+      request<Property>(`/api/properties/admin/${id}`, {
+        method: "PUT",
+        body: data,
+        auth: true,
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["properties"] });
+      qc.invalidateQueries({ queryKey: ["admin", "properties"] });
+    },
+  });
+}
+
+export function useDeleteProperty() {
+  const qc = useQueryClient();
+  return useMutation<void, Error, string>({
+    mutationFn: (id) =>
+      request<void>(`/api/properties/admin/${id}`, { method: "DELETE", auth: true }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["properties"] });
+      qc.invalidateQueries({ queryKey: ["admin", "properties"] });
+    },
+  });
+}
+
+export function useUpdateVehicleById() {
+  const qc = useQueryClient();
+  return useMutation<Vehicle, Error, { id: string } & Partial<VehicleInput>>({
+    mutationFn: ({ id, ...data }) =>
+      request<Vehicle>(`/api/vehicles/admin/${id}`, {
+        method: "PUT",
+        body: data,
+        auth: true,
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["vehicles"] });
+      qc.invalidateQueries({ queryKey: ["admin", "vehicles"] });
+    },
+  });
+}
+
+export function useCreateVehicle() {
+  const qc = useQueryClient();
+  return useMutation<Vehicle, Error, VehicleInput>({
+    mutationFn: (data) =>
+      request<Vehicle>(`/api/vehicles/admin`, {
+        method: "POST",
+        body: data,
+        auth: true,
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["vehicles"] });
+      qc.invalidateQueries({ queryKey: ["admin", "vehicles"] });
+    },
+  });
+}
+
+export function useDeleteVehicle() {
+  const qc = useQueryClient();
+  return useMutation<void, Error, string>({
+    mutationFn: (id) =>
+      request<void>(`/api/vehicles/admin/${id}`, { method: "DELETE", auth: true }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["vehicles"] });
+      qc.invalidateQueries({ queryKey: ["admin", "vehicles"] });
+    },
+  });
+}
+
+export function useCreateTraining() {
+  const qc = useQueryClient();
+  return useMutation<Training, Error, TrainingInput>({
+    mutationFn: (data) =>
+      request<Training>(`/api/trainings/admin`, { method: "POST", body: data, auth: true }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["trainings"] });
+      qc.invalidateQueries({ queryKey: ["admin", "trainings"] });
+    },
+  });
+}
+
+export function useUpdateTraining() {
+  const qc = useQueryClient();
+  return useMutation<Training, Error, { id: string } & Partial<TrainingInput>>({
+    mutationFn: ({ id, ...data }) =>
+      request<Training>(`/api/trainings/admin/${id}`, {
+        method: "PUT",
+        body: data,
+        auth: true,
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["trainings"] });
+      qc.invalidateQueries({ queryKey: ["admin", "trainings"] });
+    },
+  });
+}
+
+export function useDeleteTraining() {
+  const qc = useQueryClient();
+  return useMutation<void, Error, string>({
+    mutationFn: (id) =>
+      request<void>(`/api/trainings/admin/${id}`, { method: "DELETE", auth: true }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["trainings"] });
+      qc.invalidateQueries({ queryKey: ["admin", "trainings"] });
+    },
+  });
+}
+
+export function useCreateBlogPost() {
+  const qc = useQueryClient();
+  return useMutation<BlogPost, Error, BlogPostInput>({
+    mutationFn: (data) =>
+      request<BlogPost>(`/api/blog/admin`, { method: "POST", body: data, auth: true }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["blog"] });
+      qc.invalidateQueries({ queryKey: ["admin", "blog"] });
+    },
+  });
+}
+
+export function useUpdateBlogPost() {
+  const qc = useQueryClient();
+  return useMutation<BlogPost, Error, { id: string } & Partial<BlogPostInput>>({
+    mutationFn: ({ id, ...data }) =>
+      request<BlogPost>(`/api/blog/admin/${id}`, {
+        method: "PUT",
+        body: data,
+        auth: true,
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["blog"] });
+      qc.invalidateQueries({ queryKey: ["admin", "blog"] });
+    },
+  });
+}
+
+export function useDeleteBlogPost() {
+  const qc = useQueryClient();
+  return useMutation<void, Error, string>({
+    mutationFn: (id) =>
+      request<void>(`/api/blog/admin/${id}`, { method: "DELETE", auth: true }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["blog"] });
+      qc.invalidateQueries({ queryKey: ["admin", "blog"] });
+    },
+  });
+}
+
+export function useUpdateMessageStatus() {
+  const qc = useQueryClient();
+  return useMutation<Message, Error, { id: string; status: MessageStatus }>({
+    mutationFn: ({ id, status }) =>
+      request<Message>(`/api/messages/admin/${id}/status`, {
+        method: "PUT",
+        body: { status },
+        auth: true,
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin", "messages"] });
+    },
+  });
+}
+
+export function useUpdateQuoteStatus() {
+  const qc = useQueryClient();
+  return useMutation<Quote, Error, { id: string; status: QuoteStatus }>({
+    mutationFn: ({ id, status }) =>
+      request<Quote>(`/api/quotes/admin/${id}/status`, {
+        method: "PUT",
+        body: { status },
+        auth: true,
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin", "quotes"] });
+    },
+  });
+}
+
+export function useUpdateBookingStatus() {
+  const qc = useQueryClient();
+  return useMutation<Booking, Error, { id: string; status: BookingStatus }>({
+    mutationFn: ({ id, status }) =>
+      request<Booking>(`/api/bookings/admin/${id}/status`, {
+        method: "PUT",
+        body: { status },
+        auth: true,
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin", "bookings"] });
+    },
+  });
+}
+
+export function useUpdateCompanySettings() {
+  const qc = useQueryClient();
+  return useMutation<CompanySettings, Error, CompanySettingsInput>({
+    mutationFn: (data) =>
+      request<CompanySettings>(`/api/settings`, {
+        method: "PUT",
+        body: data,
+        auth: true,
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["settings"] });
+    },
+  });
+}
+
+// ── Upload helper (admin) ──────────────────────────────────────
+
+export function useUploadImage() {
+  return useMutation<{ url: string; publicId?: string }, Error, File>({
+    mutationFn: async (file) => {
+      const form = new FormData();
+      form.append("file", file);
+      return request<{ url: string; publicId?: string }>(`/api/upload`, {
+        method: "POST",
+        body: form,
+        auth: true,
+      });
+    },
+  });
+}
+
+// ── Re-exports kept for legacy callers ─────────────────────────
+
+export type {
+  BlogPage,
+  BlogPost,
+  BlogPostInput,
+  Booking,
+  BookingInput,
+  BookingStatus,
+  CompanySettings,
+  CompanySettingsInput,
+  Message,
+  MessageStatus,
+  NewsletterSubscriber,
+  PostStatus,
+  Property,
+  PropertyFilter,
+  PropertyInput,
+  PropertyType,
+  Quote,
+  QuoteInput,
+  QuoteStatus,
+  Training,
+  TrainingEnrollment,
+  TrainingInput,
+  Vehicle,
+  VehicleFilter,
+  VehicleInput,
+  VehicleType,
+};
+
+// ── Dashboard stats ────────────────────────────────────────────
+
+export interface DashboardStats {
+  totalProperties: number;
+  totalVehicles: number;
+  totalTrainings: number;
+  totalBlogPosts: number;
+  totalMessages: number;
+  unreadMessages: number;
+  totalBookings: number;
+  pendingBookings: number;
+  totalQuotes: number;
+  pendingQuotes: number;
+  totalSubscribers: number;
+}
+
+export function useAdminDashboardStats() {
+  return useQuery<DashboardStats>({
+    queryKey: ["admin", "stats"],
+    queryFn: () => request<DashboardStats>(`/api/admin/stats`, { auth: true }),
+    staleTime: 30_000,
+  });
+}
+
+// ── Legacy aliases (admin + service pages still use the old naming) ────
+// These wrappers exist so existing call sites (`useAdminCreateProperty()`)
+// keep working without forcing every page to rename the hook.
 
 export function useAdminCreateProperty() {
-  const { actor } = useBackendActor();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (input: PropertyInput) => actor!.adminCreateProperty(input),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["adminProperties"] }),
-  });
+  return useCreateProperty();
 }
-
 export function useAdminUpdateProperty() {
-  const { actor } = useBackendActor();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, input }: { id: Id; input: PropertyInput }) =>
-      actor!.adminUpdateProperty(id, input),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["adminProperties"] }),
-  });
+  return useUpdatePropertyById();
 }
-
 export function useAdminDeleteProperty() {
-  const { actor } = useBackendActor();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (id: Id) => actor!.adminDeleteProperty(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["adminProperties"] }),
-  });
+  return useDeleteProperty();
 }
-
 export function useAdminCreateVehicle() {
-  const { actor } = useBackendActor();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (input: VehicleInput) => actor!.adminCreateVehicle(input),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["adminVehicles"] }),
-  });
+  return useCreateVehicle();
 }
-
 export function useAdminUpdateVehicle() {
-  const { actor } = useBackendActor();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, input }: { id: Id; input: VehicleInput }) =>
-      actor!.adminUpdateVehicle(id, input),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["adminVehicles"] }),
-  });
+  return useUpdateVehicleById();
 }
-
 export function useAdminDeleteVehicle() {
-  const { actor } = useBackendActor();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (id: Id) => actor!.adminDeleteVehicle(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["adminVehicles"] }),
-  });
+  return useDeleteVehicle();
 }
-
 export function useAdminCreateTraining() {
-  const { actor } = useBackendActor();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (input: TrainingInput) => actor!.adminCreateTraining(input),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["adminTrainings"] }),
-  });
+  return useCreateTraining();
 }
-
 export function useAdminUpdateTraining() {
-  const { actor } = useBackendActor();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, input }: { id: Id; input: TrainingInput }) =>
-      actor!.adminUpdateTraining(id, input),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["adminTrainings"] }),
-  });
+  return useUpdateTraining();
 }
-
 export function useAdminDeleteTraining() {
-  const { actor } = useBackendActor();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (id: Id) => actor!.adminDeleteTraining(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["adminTrainings"] }),
-  });
+  return useDeleteTraining();
 }
-
 export function useAdminCreateBlogPost() {
-  const { actor } = useBackendActor();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (input: BlogPostInput) => actor!.adminCreateBlogPost(input),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["adminBlogPosts"] }),
-  });
+  return useCreateBlogPost();
 }
-
 export function useAdminUpdateBlogPost() {
-  const { actor } = useBackendActor();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, input }: { id: Id; input: BlogPostInput }) =>
-      actor!.adminUpdateBlogPost(id, input),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["adminBlogPosts"] }),
-  });
+  return useUpdateBlogPost();
 }
-
 export function useAdminDeleteBlogPost() {
-  const { actor } = useBackendActor();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (id: Id) => actor!.adminDeleteBlogPost(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["adminBlogPosts"] }),
-  });
+  return useDeleteBlogPost();
 }
-
 export function useAdminUpdateMessageStatus() {
-  const { actor } = useBackendActor();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, status }: { id: Id; status: MessageStatus }) =>
-      actor!.adminUpdateMessageStatus(id, status),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["adminMessages"] }),
-  });
+  return useUpdateMessageStatus();
 }
-
-export function useAdminUpdateBookingStatus() {
-  const { actor } = useBackendActor();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, status }: { id: Id; status: BookingStatus }) =>
-      actor!.adminUpdateBookingStatus(id, status),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["adminBookings"] }),
-  });
-}
-
-export function useAdminUpdateQuoteStatus() {
-  const { actor } = useBackendActor();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, status }: { id: Id; status: QuoteStatus }) =>
-      actor!.adminUpdateQuoteStatus(id, status),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["adminQuotes"] }),
-  });
-}
-
 export function useAdminUpdateCompanySettings() {
-  const { actor } = useBackendActor();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (settings: CompanySettings) =>
-      actor!.adminUpdateCompanySettings(settings),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["companySettings"] }),
-  });
+  return useUpdateCompanySettings();
+}
+export function useAdminUpdateQuoteStatus() {
+  return useUpdateQuoteStatus();
+}
+export function useAdminUpdateBookingStatus() {
+  return useUpdateBookingStatus();
 }
 
-export function useAdminBlogPostsByStatus(status?: PostStatus) {
-  const { data: posts, ...rest } = useAdminBlogPosts();
-  return {
-    ...rest,
-    data: status ? posts?.filter((p) => p.postStatus === status) : posts,
-  };
+// Public mutation aliases matching the original useBackend names
+export function useSubmitMessage() {
+  return useCreateMessage();
+}
+export function useSubmitQuote() {
+  return useCreateQuote();
+}
+export function useSubmitBooking() {
+  return useCreateBooking();
+}
+export function useEnrollInTraining() {
+  return useCreateEnrollment();
 }

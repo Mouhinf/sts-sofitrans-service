@@ -172,7 +172,7 @@ export default function AdminDashboardPage() {
                       <Skeleton className="h-7 w-12" />
                     ) : (
                       <p className="font-display text-2xl font-bold text-foreground">
-                        {Number(stats?.[card.key as StatKey] ?? 0n)}
+                        {Number(stats?.[card.key as StatKey] ?? 0)}
                       </p>
                     )}
                     <p className="text-xs text-muted-foreground">

@@ -160,7 +160,7 @@ function PropertyDetail({
       {property.images[0] ? (
         <div className="rounded-lg overflow-hidden h-56 bg-muted">
           <img
-            src={property.images[0].getDirectURL()}
+            src={property.images[0]?.url}
             alt={property.title}
             className="w-full h-full object-cover"
           />

@@ -13,13 +13,13 @@ import { formatFCFA } from "@/components/shared";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  useAdminCreateTraining,
-  useAdminDeleteTraining,
+  useCreateTraining,
+  useDeleteTraining,
   useAdminTrainings,
-  useAdminUpdateTraining,
+  useUpdateTraining,
 } from "@/hooks/useBackend";
 import type {
-  ExternalBlob,
+  ImageRef,
   Training,
   TrainingEnrollment,
   TrainingInput,
@@ -41,10 +41,11 @@ function toInput(f: TrainingFormState): TrainingInput {
   return {
     title: f.title,
     description: f.description,
-    durationDays: BigInt(Number(f.durationDays) || 1),
-    price: BigInt(Number(f.price) || 0),
-    maxCapacity: BigInt(Number(f.maxCapacity) || 20),
-    image: f.image as ExternalBlob,
+    durationDays: Number(f.durationDays) || 1,
+    price: Number(f.price) || 0,
+    maxCapacity: Number(f.maxCapacity) || 20,
+    imageUrl: f.image?.url ?? "",
+    imagePublicId: f.image?.publicId ?? "",
   };
 }
 
@@ -52,10 +53,10 @@ function fromEntity(t: Training): TrainingFormState {
   return {
     title: t.title,
     description: t.description,
-    durationDays: t.durationDays.toString(),
-    price: t.price.toString(),
-    maxCapacity: t.maxCapacity.toString(),
-    image: t.image,
+    durationDays: String(t.durationDays),
+    price: String(t.price),
+    maxCapacity: String(t.maxCapacity),
+    image: t.imageUrl ? { url: t.imageUrl, publicId: t.imagePublicId ?? "" } : null,
   };
 }
 
@@ -111,9 +112,9 @@ function EnrollmentList({
 
 export default function AdminFormationsPage() {
   const { data: trainings, isLoading } = useAdminTrainings();
-  const createMutation = useAdminCreateTraining();
-  const updateMutation = useAdminUpdateTraining();
-  const deleteMutation = useAdminDeleteTraining();
+  const createMutation = useCreateTraining();
+  const updateMutation = useUpdateTraining();
+  const deleteMutation = useDeleteTraining();
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Training | null>(null);
@@ -150,7 +151,7 @@ export default function AdminFormationsPage() {
     const input = toInput(form);
     try {
       if (editTarget) {
-        await updateMutation.mutateAsync({ id: editTarget.id, input });
+        await updateMutation.mutateAsync({ id: editTarget.id, ...input });
         toast.success("Formation mise à jour");
       } else {
         await createMutation.mutateAsync(input);
@@ -188,7 +189,7 @@ export default function AdminFormationsPage() {
         items={trainings}
         isLoading={isLoading}
         rowOcid={() => "training-row"}
-        getRowKey={(t) => t.id.toString()}
+        getRowKey={(t) => t.id}
         emptyOcid="empty-admin-trainings"
         emptyMessage="Aucune formation. Créez-en une !"
         skeletonCols={6}
@@ -197,9 +198,9 @@ export default function AdminFormationsPage() {
             key: "image",
             label: "Image",
             render: (t) =>
-              t.image ? (
+              t.imageUrl ? (
                 <img
-                  src={t.image.getDirectURL()}
+                  src={t.imageUrl}
                   alt={t.title}
                   className="h-10 w-14 object-cover rounded-md"
                 />
@@ -222,7 +223,7 @@ export default function AdminFormationsPage() {
             className: "text-right tabular-nums",
             thClassName: "text-right",
             showOn: "md",
-            render: (t) => `${t.durationDays.toString()} j`,
+            render: (t) => `${String(t.durationDays)} j`,
           },
           {
             key: "price",
@@ -241,7 +242,7 @@ export default function AdminFormationsPage() {
             render: (t) => (
               <Badge variant="outline" className="gap-1">
                 <Users className="h-3 w-3" />
-                {t.enrollments.length}/{t.maxCapacity.toString()}
+                {t.enrollments?.length ?? 0}/{String(t.maxCapacity)}
               </Badge>
             ),
           },
@@ -253,13 +254,13 @@ export default function AdminFormationsPage() {
               size="icon"
               onClick={() =>
                 setExpandedId((id) =>
-                  id === t.id.toString() ? null : t.id.toString(),
+                  id === t.id ? null : t.id,
                 )
               }
               aria-label="Voir les inscrits"
               data-ocid="view-enrollments-btn"
             >
-              {expandedId === t.id.toString() ? (
+              {expandedId === t.id ? (
                 <ChevronUp className="h-4 w-4" />
               ) : (
                 <ChevronDown className="h-4 w-4" />
@@ -279,14 +280,14 @@ export default function AdminFormationsPage() {
 
       {expandedId
         ? (() => {
-            const t = trainings?.find((x) => x.id.toString() === expandedId);
+            const t = trainings?.find((x) => x.id === expandedId);
             if (!t) return null;
             return (
               <div className="mt-4 bg-card border border-border rounded-xl p-4">
                 <h3 className="text-sm font-semibold mb-2">
                   Inscrits à cette formation
                 </h3>
-                <EnrollmentList enrollments={t.enrollments} />
+                <EnrollmentList enrollments={t.enrollments ?? []} />
               </div>
             );
           })()

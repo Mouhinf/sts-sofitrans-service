@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
 import type { Property } from "@/types";
+import { cn } from "@/lib/utils";
 import { Bath, BedDouble, Building2, MapPin } from "lucide-react";
 import { motion } from "motion/react";
 import type { KeyboardEvent } from "react";
@@ -20,7 +20,8 @@ export function PropertyCard({
   onClick,
   className,
 }: PropertyCardProps) {
-  const hasImage = property.images.length > 0;
+  const imageUrl = property.images[0]?.url;
+  const hasImage = !!imageUrl;
   const interactive = !!onClick;
 
   function handleKeyDown(e: KeyboardEvent<HTMLDivElement>) {
@@ -52,7 +53,7 @@ export function PropertyCard({
       <div className="relative h-52 overflow-hidden bg-muted">
         {hasImage ? (
           <img
-            src={property.images[0].getDirectURL()}
+            src={imageUrl}
             alt={property.title}
             className="w-full h-full object-cover group-hover:scale-105 transition-smooth"
             loading="lazy"
@@ -77,11 +78,11 @@ export function PropertyCard({
         <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
           <span className="flex items-center gap-1">
             <BedDouble className="w-4 h-4" />
-            {property.bedrooms.toString()} ch.
+            {property.bedrooms} ch.
           </span>
           <span className="flex items-center gap-1">
             <Bath className="w-4 h-4" />
-            {property.bathrooms.toString()} sdb.
+            {property.bathrooms} sdb.
           </span>
         </div>
         <p className="text-primary font-display font-bold text-xl">

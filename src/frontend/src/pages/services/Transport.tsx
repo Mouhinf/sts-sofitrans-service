@@ -180,7 +180,7 @@ function VehicleDetail({
       {vehicle.images[0] ? (
         <div className="rounded-lg overflow-hidden h-56 bg-muted">
           <img
-            src={vehicle.images[0].getDirectURL()}
+            src={vehicle.images[0]?.url}
             alt={vehicle.title}
             className="w-full h-full object-cover"
           />
@@ -192,7 +192,7 @@ function VehicleDetail({
         </Badge>
         <Badge variant="outline" className="flex items-center gap-1">
           <Users className="w-3 h-3" />
-          {vehicle.capacity.toString()} places
+          {String(vehicle.capacity)} places
         </Badge>
         <Badge variant="outline" className="flex items-center gap-1">
           <CalendarDays className="w-3 h-3" />
@@ -206,7 +206,7 @@ function VehicleDetail({
         <div>
           <p className="text-xs text-muted-foreground">Tarif journalier</p>
           <p className="text-secondary font-display font-bold text-2xl">
-            {vehicle.pricePerDay.toString() !== "0"
+            {String(vehicle.pricePerDay) !== "0"
               ? `${new Intl.NumberFormat("fr-FR").format(Number(vehicle.pricePerDay))} FCFA / jour`
               : "Sur devis"}
           </p>
