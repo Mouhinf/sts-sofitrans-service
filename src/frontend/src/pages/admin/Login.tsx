@@ -45,7 +45,7 @@ export default function AdminLoginPage() {
           <Shield className="h-8 w-8 text-primary" />
         </div>
         <img
-          src="/assets/logo.jpg"
+          src="/assets/logo-mark.svg"
           alt="STS SOFITRANS"
           className="h-12 w-auto object-contain mx-auto mb-4"
           onError={(e) => {

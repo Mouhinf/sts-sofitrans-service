@@ -5,7 +5,7 @@ import environment from "vite-plugin-environment";
 
 const ii_url =
   process.env.DFX_NETWORK === "local"
-    ? `http://rdmx6-jaaaa-aaaaa-aaadq-cai.localhost:8081/`
+    ? `http://127.0.0.1:4943/?canisterId=rdmx6-jaaaa-aaaaa-aaadq-cai`
     : `https://identity.internetcomputer.org/`;
 
 process.env.II_URL = process.env.II_URL || ii_url;

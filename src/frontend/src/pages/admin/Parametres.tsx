@@ -6,6 +6,7 @@ import {
   useAdminUpdateCompanySettings,
   useCompanySettings,
 } from "@/hooks/useBackend";
+import { resolveContact } from "@/lib/contact";
 import type { CompanySettings } from "@/types";
 import {
   Facebook,
@@ -33,6 +34,7 @@ const EMPTY: CompanySettings = {
 
 export default function AdminParametresPage() {
   const { data: settings, isLoading } = useCompanySettings();
+  const contact = resolveContact(settings);
   const updateMutation = useAdminUpdateCompanySettings();
   const [form, setForm] = useState<CompanySettings>(EMPTY);
   const [saved, setSaved] = useState(false);
@@ -105,7 +107,7 @@ export default function AdminParametresPage() {
                 type="tel"
                 value={form.phone ?? ""}
                 onChange={(e) => set("phone", e.target.value)}
-                placeholder="+221 77 000 00 00"
+                placeholder={contact.phone || "+221 77 000 00 00"}
                 data-ocid="settings-phone"
               />
               <InputField

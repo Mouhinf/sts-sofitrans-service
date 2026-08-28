@@ -25,7 +25,7 @@ import BlogApi "mixins/blog-api";
 import NewsletterApi "mixins/newsletter-api";
 import SettingsApi "mixins/settings-api";
 
-actor {
+persistent actor {
   // --- Authorization ---
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
@@ -71,13 +71,14 @@ actor {
   }];
 
   // --- Données de démonstration ---
-  nextPropertyId[0] := PropLib.initSampleData(properties, nextPropertyId[0]);
-  nextVehicleId[0] := VehicleLib.initSampleData(vehicles, nextVehicleId[0]);
-  nextPostId[0] := BlogLib.initSampleData(posts, nextPostId[0]);
-  // Formations de démonstration: uniquement si liste vide (premier démarrage)
-  if (trainings.size() == 0) {
-    TrainingLib.seedSampleTrainings(trainings);
-    nextTrainingId[0] := 3; // 2 formations créées avec ids 1 et 2
+  do {
+    nextPropertyId[0] := PropLib.initSampleData(properties, nextPropertyId[0]);
+    nextVehicleId[0] := VehicleLib.initSampleData(vehicles, nextVehicleId[0]);
+    nextPostId[0] := BlogLib.initSampleData(posts, nextPostId[0]);
+    if (trainings.size() == 0) {
+      TrainingLib.seedSampleTrainings(trainings);
+      nextTrainingId[0] := 3;
+    };
   };
 
   // --- Mixins ---

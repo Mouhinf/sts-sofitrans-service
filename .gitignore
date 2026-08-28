@@ -1,0 +1,57 @@
+# ── Node / pnpm ────────────────────────────────────────────────
+node_modules/
+.pnpm-store/
+
+# ── Build artefacts (Caffeine / dfx) ───────────────────────────
+.dfx/
+dist/
+build/
+out/
+
+# ── Generated bindings (regenerated via `pnpm bindgen`) ───────
+src/frontend/src/backend.ts
+src/frontend/src/backend.d.ts
+src/frontend/src/declarations/*.d.ts
+src/frontend/src/declarations/*.js
+
+# ── Local env files ────────────────────────────────────────────
+.env
+.env.local
+src/frontend/.env
+src/frontend/.env.local
+
+# ── Editor / OS ────────────────────────────────────────────────
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# ── Logs / cache ───────────────────────────────────────────────
+*.log
+npm-debug.log*
+pnpm-debug.log*
+.cache/
+.parcel-cache/
+.turbo/
+
+# ── Coverage / test outputs ────────────────────────────────────
+coverage/
+*.lcov
+
+# ── Misc dev artefacts ────────────────────────────────────────
+test.txt
+test-*.txt
+scratch.*
+
+# ── Playwright outputs ────────────────────────────────────────
+playwright-report/
+test-results/
+.playwright/
+
+# ── Motoko / mops local cache ─────────────────────────────────
+.mops/
+
+# ── dfx / IC local state ──────────────────────────────────────
+.deps/
+deps/
+dfx.json

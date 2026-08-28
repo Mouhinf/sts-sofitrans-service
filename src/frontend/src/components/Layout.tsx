@@ -1,4 +1,6 @@
 import { Button } from "@/components/ui/button";
+import { useCompanySettings } from "@/hooks/useBackend";
+import { resolveContact } from "@/lib/contact";
 import { cn } from "@/lib/utils";
 import { Link } from "@tanstack/react-router";
 import { ChevronDown, Menu, MessageCircle, Phone, X } from "lucide-react";
@@ -21,9 +23,6 @@ const NAV_ITEMS = [
   { label: "Blog", href: "/blog" },
   { label: "Contact", href: "/contact" },
 ];
-
-const WHATSAPP_NUMBER = "221777000000";
-const PHONE_NUMBER = "+221 77 XXX XX XX";
 
 function NavLink({
   href,
@@ -99,6 +98,10 @@ function NavLink({
 }
 
 function Header() {
+  const { data: settings } = useCompanySettings();
+  const contact = resolveContact(settings);
+
+  const headerPhoneHref = contact.phoneHref;
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -124,7 +127,7 @@ function Header() {
           aria-label="STS SOFITRANS SERVICE — Accueil"
         >
           <img
-            src="/assets/logo.jpg"
+            src="/assets/logo-mark.svg"
             alt="STS SOFITRANS SERVICE"
             className="h-10 w-auto object-contain"
             onError={(e) => {
@@ -161,7 +164,7 @@ function Header() {
             className="border-secondary text-secondary hover:bg-secondary hover:text-secondary-foreground"
             data-ocid="header-contact-btn"
           >
-            <a href={`tel:${PHONE_NUMBER}`} aria-label="Appeler STS SOFITRANS">
+            <a href={headerPhoneHref} aria-label="Appeler STS SOFITRANS">
               <Phone className="h-4 w-4 mr-1.5" />
               Contact
             </a>
@@ -239,7 +242,7 @@ function Header() {
               ))}
               <div className="mt-3 pt-3 border-t border-border flex flex-col gap-2">
                 <Button variant="outline" asChild className="w-full">
-                  <a href={`tel:${PHONE_NUMBER}`}>
+                  <a href={headerPhoneHref}>
                     <Phone className="h-4 w-4 mr-2" />
                     Appeler maintenant
                   </a>
@@ -264,6 +267,9 @@ function Header() {
 
 function Footer() {
   const year = new Date().getFullYear();
+  const { data: settings } = useCompanySettings();
+  const contact = resolveContact(settings);
+  const footerPhoneHref = contact.phoneHref;
   return (
     <footer className="bg-foreground text-background" data-ocid="footer">
       <div className="container mx-auto px-4 md:px-6 py-12">
@@ -272,7 +278,7 @@ function Footer() {
           <div className="lg:col-span-2">
             <div className="flex items-center gap-3 mb-4">
               <img
-                src="/assets/logo.jpg"
+                src="/assets/logo-mark.svg"
                 alt="STS SOFITRANS SERVICE"
                 className="h-12 w-auto object-contain bg-background rounded-md p-1"
                 onError={(e) => {
@@ -324,14 +330,14 @@ function Footer() {
                 </p>
               </div>
               <a
-                href={`tel:${PHONE_NUMBER}`}
+                href={footerPhoneHref}
                 className="flex items-center gap-2 text-sm text-background/70 hover:text-primary transition-colors"
               >
                 <Phone className="h-4 w-4 shrink-0" />
-                {PHONE_NUMBER}
+                {contact.phone}
               </a>
               <a
-                href={`https://wa.me/${WHATSAPP_NUMBER}`}
+                href={contact.whatsappHref}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 text-sm text-background/70 hover:text-primary transition-colors"
@@ -346,15 +352,19 @@ function Footer() {
         <div className="mt-10 pt-6 border-t border-background/10 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-background/50">
           <p>© {year} STS SOFITRANS SERVICE. Tous droits réservés.</p>
           <p>
-            Conçu avec amour par{" "}
-            <a
-              href={`https://caffeine.ai?utm_source=caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(typeof window !== "undefined" ? window.location.hostname : "")}`}
-              target="_blank"
-              rel="noopener noreferrer"
+            <Link
+              to="/contact"
               className="hover:text-background/80 underline transition-colors"
             >
-              caffeine.ai
-            </a>
+              Mentions légales
+            </Link>
+            <span className="mx-2 opacity-50">·</span>
+            <Link
+              to="/contact"
+              className="hover:text-background/80 underline transition-colors"
+            >
+              Nous contacter
+            </Link>
           </p>
         </div>
       </div>
@@ -363,13 +373,16 @@ function Footer() {
 }
 
 function FloatingButtons() {
+  const { data: settings } = useCompanySettings();
+  const contact = resolveContact(settings);
+  if (!contact.isConfigured) return null;
   return (
     <div
       className="fixed bottom-5 right-4 z-50 flex flex-col gap-3"
       aria-label="Contacts rapides"
     >
       <a
-        href={`https://wa.me/${WHATSAPP_NUMBER}?text=Bonjour%20STS%20SOFITRANS%2C%20je%20souhaite%20obtenir%20des%20informations.`}
+        href={contact.whatsappHref}
         target="_blank"
         rel="noopener noreferrer"
         className="flex items-center justify-center h-12 w-12 rounded-full shadow-elevated transition-transform duration-200 hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -380,7 +393,7 @@ function FloatingButtons() {
         <MessageCircle className="h-6 w-6 text-white" />
       </a>
       <a
-        href={`tel:${PHONE_NUMBER}`}
+        href={contact.phoneHref}
         className="flex items-center justify-center h-12 w-12 rounded-full bg-secondary shadow-elevated transition-transform duration-200 hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         aria-label="Appeler STS SOFITRANS"
         data-ocid="call-float-btn"
@@ -398,6 +411,12 @@ interface LayoutProps {
 export function Layout({ children }: LayoutProps) {
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:bg-primary focus:text-primary-foreground focus:px-4 focus:py-2 focus:rounded-md focus:shadow-elevated focus:outline-none"
+      >
+        Aller au contenu principal
+      </a>
       <Header />
       <main className="flex-1" id="main-content">
         {children}

@@ -83,7 +83,7 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
         <div className="p-4 border-b border-sidebar-border">
           <Link to="/" className="flex items-center gap-2">
             <img
-              src="/assets/logo.jpg"
+              src="/assets/logo-mark.svg"
               alt="STS SOFITRANS"
               className="h-8 w-auto object-contain"
               onError={(e) => {
@@ -149,7 +149,7 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
                   onClick={() => setSidebarOpen(false)}
                 >
                   <img
-                    src="/assets/logo.jpg"
+                    src="/assets/logo-mark.svg"
                     alt="STS SOFITRANS"
                     className="h-8 w-auto"
                     onError={(e) => {

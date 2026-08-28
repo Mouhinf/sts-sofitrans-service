@@ -1,3 +1,5 @@
+import { useCompanySettings } from "@/hooks/useBackend";
+import { resolveContact } from "@/lib/contact";
 import { Link } from "@tanstack/react-router";
 import {
   ArrowRight,
@@ -52,6 +54,8 @@ const services = [
 ];
 
 export default function ServicesPage() {
+  const { data: settings } = useCompanySettings();
+  const contact = resolveContact(settings);
   return (
     <div className="flex flex-col">
       {/* Hero */}
@@ -158,7 +162,7 @@ export default function ServicesPage() {
                 <ArrowRight className="w-4 h-4" />
               </Link>
               <a
-                href="https://wa.me/221770000000"
+                href={contact.whatsappHref ?? "https://wa.me/"}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center justify-center gap-2 bg-card border border-border text-foreground px-8 py-3.5 rounded-xl font-semibold hover:border-primary/40 transition-smooth shadow-corporate"

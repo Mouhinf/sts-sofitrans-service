@@ -1,13 +1,16 @@
 import List "mo:core/List";
 import Runtime "mo:core/Runtime";
 import Time "mo:core/Time";
+import Array "mo:core/Array";  // ✅ AJOUTÉ
+import Text "mo:core/Text";     // ✅ AJOUTÉ
 import Types "../types/trainings";
 import Common "../types/common";
 
 module {
   // Validation basique du format email
   func isValidEmail(email : Text) : Bool {
-    email.contains(#char '@') and email.contains(#char '.')
+    // ✅ CORRIGÉ: Text.contains au lieu de email.contains
+    Text.contains(email, #char '@') and Text.contains(email, #char '.')
   };
 
   // Image vide (Blob vide comme placeholder)
@@ -138,7 +141,8 @@ module {
           phone = input.phone;
           dateRegistered = Time.now();
         };
-        let newEnrollments = t.enrollments.concat([newEnrollment]);
+        // ✅ CORRIGÉ: Utiliser Array.append au lieu de .concat()
+        let newEnrollments = Array.concat(t.enrollments, [newEnrollment]);
         let newT = { t with enrollments = newEnrollments; updatedAt = Time.now() };
         enrolled := true;
         newT

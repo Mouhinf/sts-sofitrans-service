@@ -1,13 +1,25 @@
+import {
+  CatalogGrid,
+  ContactFields,
+  type ContactFieldsInputs,
+  ServiceHero,
+  SuccessConfirmation,
+  VehicleCard,
+  validateContactField,
+} from "@/components/shared";
 import { InputField } from "@/components/ui/InputField";
 import { Modal } from "@/components/ui/Modal";
 import { TextareaField } from "@/components/ui/TextareaField";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useSubmitBooking, useVehicles } from "@/hooks/useBackend";
-import type { BookingInput, Vehicle, VehicleType } from "@/types";
-import { CalendarDays, CheckCircle2, Truck, Users } from "lucide-react";
-import { motion } from "motion/react";
+import {
+  useCompanySettings,
+  useSubmitBooking,
+  useVehicles,
+} from "@/hooks/useBackend";
+import { toE164Digits } from "@/lib/contact";
+import type { BookingInput, Vehicle } from "@/types";
+import { CalendarDays, Truck, Users } from "lucide-react";
 import { useState } from "react";
 
 const VEHICLE_TYPE_LABELS: Record<string, string> = {
@@ -17,65 +29,13 @@ const VEHICLE_TYPE_LABELS: Record<string, string> = {
   minibus: "Minibus",
 };
 
-function formatFCFA(amount: bigint): string {
-  return `${new Intl.NumberFormat("fr-FR").format(Number(amount))} FCFA`;
-}
-
-function VehicleCard({
-  vehicle,
-  onClick,
-}: {
-  vehicle: Vehicle;
-  onClick: () => void;
-}) {
-  const imageUrl =
-    vehicle.images[0]?.getDirectURL() ?? "/assets/images/placeholder.svg";
-  return (
-    <motion.button
-      type="button"
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.4 }}
-      className="group bg-card border border-border rounded-xl overflow-hidden shadow-corporate hover-lift cursor-pointer text-left w-full"
-      onClick={onClick}
-      aria-label={`Voir ${vehicle.title}`}
-      data-ocid="vehicle-card"
-    >
-      <div className="relative h-48 overflow-hidden bg-muted">
-        <img
-          src={imageUrl}
-          alt={vehicle.title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-smooth"
-        />
-        <div className="absolute top-3 left-3">
-          <Badge className="bg-secondary text-secondary-foreground text-xs font-semibold">
-            {VEHICLE_TYPE_LABELS[vehicle.vehicleType] ?? vehicle.vehicleType}
-          </Badge>
-        </div>
-      </div>
-      <div className="p-4">
-        <h3 className="font-display font-bold text-foreground text-lg mb-1 truncate group-hover:text-secondary transition-colors duration-200">
-          {vehicle.title}
-        </h3>
-        <p className="text-sm text-muted-foreground mb-1">{vehicle.model}</p>
-        <div className="flex items-center gap-3 text-sm text-muted-foreground mb-4">
-          <span className="flex items-center gap-1">
-            <Users className="w-3.5 h-3.5" />
-            {String(vehicle.capacity)} places
-          </span>
-        </div>
-        <p className="text-secondary font-bold text-lg">
-          {formatFCFA(vehicle.pricePerDay)}
-          <span className="text-sm font-normal text-muted-foreground">
-            {" "}
-            / jour
-          </span>
-        </p>
-      </div>
-    </motion.button>
-  );
-}
+const VEHICLE_TYPE_FILTERS = [
+  { value: "", label: "Tous" },
+  { value: "car", label: "Voitures" },
+  { value: "minibus", label: "Minibus" },
+  { value: "bus", label: "Bus" },
+  { value: "truck", label: "Camions" },
+];
 
 function BookingForm({
   vehicle,
@@ -84,34 +44,61 @@ function BookingForm({
   vehicle: Vehicle;
   onSuccess: () => void;
 }) {
+  const { data: settings } = useCompanySettings();
   const { mutate, isPending, isSuccess, isError } = useSubmitBooking();
-  const [form, setForm] = useState<BookingInput>({
+  const whatsappNumber = toE164Digits(settings?.whatsapp);
+
+  const [contact, setContact] = useState<ContactFieldsInputs>({
     customerName: "",
-    vehicleId: vehicle.id,
     email: "",
     phone: "",
-    startDate: "",
-    endDate: "",
-    specialRequests: "",
   });
+  const [dates, setDates] = useState({ startDate: "", endDate: "" });
+  const [specialRequests, setSpecialRequests] = useState("");
+  const [errors, setErrors] = useState<
+    Partial<Record<keyof ContactFieldsInputs | "startDate" | "endDate", string>>
+  >({});
+
+  function setError(field: keyof typeof errors, msg: string) {
+    setErrors((prev) => ({ ...prev, [field]: msg }));
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    mutate(form, { onSuccess });
+    const newErrors: typeof errors = {
+      startDate: dates.startDate ? "" : "La date de début est requise.",
+      endDate: dates.endDate ? "" : "La date de fin est requise.",
+    };
+    for (const f of ["customerName", "email", "phone"] as const) {
+      newErrors[f] = validateContactField(f, contact[f], true);
+    }
+    if (dates.startDate && dates.endDate && dates.endDate < dates.startDate) {
+      newErrors.endDate = "La date de fin doit suivre la date de début.";
+    }
+    setErrors(newErrors);
+    if (Object.values(newErrors).some((v) => v)) return;
+
+    const payload: BookingInput = {
+      ...contact,
+      vehicleId: vehicle.id,
+      startDate: dates.startDate,
+      endDate: dates.endDate,
+      specialRequests,
+    };
+    mutate(payload, { onSuccess });
   };
 
   if (isSuccess) {
     return (
-      <div className="flex flex-col items-center gap-4 py-6 text-center">
-        <CheckCircle2 className="w-12 h-12 text-secondary" />
-        <h3 className="text-xl font-display font-bold text-foreground">
-          Réservation envoyée !
-        </h3>
-        <p className="text-muted-foreground">
-          Votre demande de réservation a été soumise. Notre équipe vous
-          confirmera sous 24h.
-        </p>
-      </div>
+      <SuccessConfirmation
+        title="Réservation envoyée !"
+        description={
+          whatsappNumber
+            ? "Notre équipe vous contactera dans les 24h pour confirmer votre réservation."
+            : "Notre équipe vous contactera dans les 24h pour confirmer votre réservation."
+        }
+        ocid="booking-success"
+      />
     );
   }
 
@@ -120,180 +107,187 @@ function BookingForm({
       onSubmit={handleSubmit}
       className="flex flex-col gap-4"
       data-ocid="booking-form"
+      noValidate
     >
-      <InputField
-        label="Nom complet"
-        required
-        value={form.customerName}
-        onChange={(e) =>
-          setForm((f) => ({ ...f, customerName: e.target.value }))
+      <ContactFields
+        idPrefix="booking"
+        value={contact}
+        onChange={setContact}
+        errors={errors}
+        onBlurValidate={(f) =>
+          setError(f, validateContactField(f, contact[f], true))
         }
-        placeholder="Votre nom"
-        data-ocid="booking-name"
-      />
-      <InputField
-        label="Email"
-        type="email"
-        required
-        value={form.email}
-        onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-        placeholder="votre@email.com"
-        data-ocid="booking-email"
-      />
-      <InputField
-        label="Téléphone"
-        type="tel"
-        required
-        value={form.phone}
-        onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-        placeholder="+221 XX XXX XX XX"
-        data-ocid="booking-phone"
       />
       <div className="grid grid-cols-2 gap-3">
         <InputField
           label="Date de début"
+          id="booking-start"
           type="date"
           required
-          value={form.startDate}
+          value={dates.startDate}
           onChange={(e) =>
-            setForm((f) => ({ ...f, startDate: e.target.value }))
+            setDates((d) => ({ ...d, startDate: e.target.value }))
           }
-          data-ocid="booking-start-date"
+          error={errors.startDate}
+          data-ocid="booking-start"
         />
         <InputField
           label="Date de fin"
+          id="booking-end"
           type="date"
           required
-          value={form.endDate}
-          onChange={(e) => setForm((f) => ({ ...f, endDate: e.target.value }))}
-          data-ocid="booking-end-date"
+          value={dates.endDate}
+          onChange={(e) => setDates((d) => ({ ...d, endDate: e.target.value }))}
+          error={errors.endDate}
+          data-ocid="booking-end"
         />
       </div>
       <TextareaField
-        label="Demandes spéciales"
-        value={form.specialRequests}
-        onChange={(e) =>
-          setForm((f) => ({ ...f, specialRequests: e.target.value }))
-        }
-        placeholder="Informations supplémentaires..."
+        label="Demandes particulières (optionnel)"
+        id="booking-requests"
+        value={specialRequests}
+        onChange={(e) => setSpecialRequests(e.target.value)}
         rows={3}
+        placeholder="Itinéraire, passagers, équipements..."
         data-ocid="booking-requests"
       />
-      {isError && (
-        <p className="text-sm text-destructive text-center" role="alert">
-          Une erreur s'est produite. Veuillez réessayer.
+      {isError ? (
+        <p className="text-destructive text-sm text-center" role="alert">
+          Une erreur est survenue. Veuillez réessayer.
         </p>
-      )}
+      ) : null}
       <Button
         type="submit"
-        className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/90"
         disabled={isPending}
+        className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/90"
         data-ocid="booking-submit"
       >
-        {isPending ? "Envoi en cours..." : "Confirmer la réservation"}
+        {isPending ? "Envoi en cours..." : "Envoyer la réservation"}
       </Button>
-      <a
-        href={`https://wa.me/221770000000?text=Je souhaite réserver : ${encodeURIComponent(vehicle.title)}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex items-center justify-center gap-2 w-full border border-border text-muted-foreground px-4 py-2.5 rounded-md text-sm font-medium hover:border-primary/40 hover:text-foreground transition-smooth"
-        data-ocid="booking-whatsapp"
-      >
-        Réserver via WhatsApp
-      </a>
     </form>
   );
 }
 
-const TYPE_FILTERS = [
-  { value: "", label: "Tous" },
-  { value: "car", label: "Voiture" },
-  { value: "bus", label: "Bus" },
-  { value: "truck", label: "Camion" },
-  { value: "minibus", label: "Minibus" },
-];
+function VehicleDetail({
+  vehicle,
+  onBook,
+}: {
+  vehicle: Vehicle;
+  onBook: () => void;
+}) {
+  return (
+    <div className="flex flex-col gap-5">
+      {vehicle.images[0] ? (
+        <div className="rounded-lg overflow-hidden h-56 bg-muted">
+          <img
+            src={vehicle.images[0].getDirectURL()}
+            alt={vehicle.title}
+            className="w-full h-full object-cover"
+          />
+        </div>
+      ) : null}
+      <div className="flex flex-wrap gap-2">
+        <Badge className="bg-secondary/10 text-secondary border-secondary/20">
+          {VEHICLE_TYPE_LABELS[vehicle.vehicleType] ?? vehicle.vehicleType}
+        </Badge>
+        <Badge variant="outline" className="flex items-center gap-1">
+          <Users className="w-3 h-3" />
+          {vehicle.capacity.toString()} places
+        </Badge>
+        <Badge variant="outline" className="flex items-center gap-1">
+          <CalendarDays className="w-3 h-3" />
+          {vehicle.model}
+        </Badge>
+      </div>
+      <p className="text-muted-foreground text-sm leading-relaxed">
+        {vehicle.description}
+      </p>
+      <div className="border-t border-border pt-4 flex items-center justify-between">
+        <div>
+          <p className="text-xs text-muted-foreground">Tarif journalier</p>
+          <p className="text-secondary font-display font-bold text-2xl">
+            {vehicle.pricePerDay.toString() !== "0"
+              ? `${new Intl.NumberFormat("fr-FR").format(Number(vehicle.pricePerDay))} FCFA / jour`
+              : "Sur devis"}
+          </p>
+        </div>
+        <Button
+          onClick={onBook}
+          className="bg-secondary text-secondary-foreground hover:bg-secondary/90"
+          data-ocid="vehicle-book-cta"
+        >
+          Réserver
+        </Button>
+      </div>
+    </div>
+  );
+}
 
 export default function TransportPage() {
-  const [vehicleTypeFilter, setVehicleTypeFilter] = useState<string>("");
-  const [maxPriceFilter, setMaxPriceFilter] = useState<string>("");
-  const backendFilter = vehicleTypeFilter
-    ? { vehicleType: vehicleTypeFilter as VehicleType }
-    : {};
-  const { data: vehicles, isLoading } = useVehicles(backendFilter);
-  const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
+  const { data: vehicles, isLoading } = useVehicles();
+  const [vehicleTypeFilter, setVehicleTypeFilter] = useState("");
+  const [maxPriceFilter, setMaxPriceFilter] = useState("");
+  const [selected, setSelected] = useState<Vehicle | null>(null);
+  const [showBooking, setShowBooking] = useState(false);
 
-  const filteredVehicles = vehicles?.filter((v) => {
-    if (!maxPriceFilter) return true;
-    const maxPrice = Number(maxPriceFilter.replace(/\s/g, ""));
-    if (Number.isNaN(maxPrice)) return true;
-    return Number(v.pricePerDay) <= maxPrice;
+  const filtered = (vehicles ?? []).filter((v) => {
+    if (vehicleTypeFilter && v.vehicleType !== vehicleTypeFilter) return false;
+    if (maxPriceFilter && Number(v.pricePerDay) > Number(maxPriceFilter))
+      return false;
+    return true;
   });
+
+  const resetFilters = () => {
+    setVehicleTypeFilter("");
+    setMaxPriceFilter("");
+  };
 
   return (
     <div className="flex flex-col">
-      {/* Hero */}
-      <section className="bg-secondary py-16 px-4 text-secondary-foreground relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10 pointer-events-none">
-          <div className="absolute top-0 right-0 w-80 h-80 rounded-full bg-secondary-foreground translate-x-1/3 -translate-y-1/3" />
-        </div>
-        <div className="max-w-5xl mx-auto relative">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
+      <ServiceHero
+        title="Transport"
+        subtitle="Une flotte moderne et des chauffeurs professionnels pour tous vos déplacements : location de véhicules avec ou sans chauffeur, transport de personnel et logistique événementielle au Sénégal et dans la sous-région."
+        actions={
+          <Button
+            asChild
+            size="lg"
+            className="bg-primary-foreground/20 border border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/30"
+            data-ocid="transport-hero-cta"
           >
-            <div className="flex items-center gap-3 mb-4">
-              <Truck className="w-8 h-8" />
-              <p className="text-sm font-semibold uppercase tracking-widest opacity-80">
-                Services
-              </p>
-            </div>
-            <h1 className="text-4xl md:text-5xl font-display font-bold mb-4">
-              Transport
-            </h1>
-            <p className="text-lg opacity-90 max-w-xl">
-              Location et affrètement de véhicules professionnels pour tous vos
-              déplacements.
-            </p>
-          </motion.div>
-        </div>
-      </section>
+            <a href="/contact">Demander un devis</a>
+          </Button>
+        }
+      />
 
-      {/* Filter bar */}
-      <section className="bg-card border-b border-border py-5 px-4 sticky top-0 z-30 shadow-corporate">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex flex-wrap gap-4 items-center">
-            <div className="flex flex-wrap gap-2 items-center">
-              <p className="text-sm font-medium text-muted-foreground">
-                Type :
-              </p>
-              {TYPE_FILTERS.map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => setVehicleTypeFilter(opt.value)}
-                  className={`px-3 py-1.5 rounded-full text-sm font-medium transition-smooth ${
-                    vehicleTypeFilter === opt.value
-                      ? "bg-secondary text-secondary-foreground shadow-corporate"
-                      : "bg-muted text-muted-foreground hover:bg-muted/80"
-                  }`}
-                  data-ocid={`filter-${opt.value || "all"}`}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-            <div className="flex items-center gap-2">
-              <InputField
-                label=""
-                id="max-price-filter"
-                type="number"
-                value={maxPriceFilter}
-                onChange={(e) => setMaxPriceFilter(e.target.value)}
-                placeholder="Prix max/jour (FCFA)"
-                data-ocid="filter-max-price"
-              />
-            </div>
+      {/* Filters */}
+      <section className="bg-muted/40 py-6 px-4 border-b border-border">
+        <div className="max-w-6xl mx-auto flex flex-wrap gap-3 items-center">
+          <p className="text-sm font-medium text-muted-foreground">Type :</p>
+          {VEHICLE_TYPE_FILTERS.map((opt) => (
+            <button
+              key={opt.value || "all"}
+              type="button"
+              onClick={() => setVehicleTypeFilter(opt.value)}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-smooth ${
+                vehicleTypeFilter === opt.value
+                  ? "bg-secondary text-secondary-foreground shadow-corporate"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+              }`}
+              data-ocid={`filter-${opt.value || "all"}`}
+            >
+              {opt.label}
+            </button>
+          ))}
+          <div className="ml-auto flex flex-wrap gap-2 items-center">
+            <InputField
+              label=""
+              id="max-price"
+              type="number"
+              value={maxPriceFilter}
+              onChange={(e) => setMaxPriceFilter(e.target.value)}
+              placeholder="Prix max / jour (FCFA)"
+              data-ocid="filter-max-price"
+            />
           </div>
         </div>
       </section>
@@ -301,94 +295,66 @@ export default function TransportPage() {
       {/* Grid */}
       <section className="bg-background py-12 px-4 min-h-[400px]">
         <div className="max-w-6xl mx-auto">
-          {isLoading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {["s1", "s2", "s3", "s4", "s5", "s6"].map((sk) => (
-                <div
-                  key={sk}
-                  className="rounded-xl overflow-hidden border border-border"
-                >
-                  <Skeleton className="h-48 w-full" />
-                  <div className="p-4 flex flex-col gap-2">
-                    <Skeleton className="h-5 w-3/4" />
-                    <Skeleton className="h-4 w-1/2" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : !filteredVehicles?.length ? (
-            <div
-              className="flex flex-col items-center gap-4 py-20 text-center"
-              data-ocid="empty-state-vehicles"
-            >
-              <Truck className="w-16 h-16 text-muted-foreground/40" />
-              <h3 className="text-xl font-display font-semibold text-foreground">
-                Aucun véhicule disponible
-              </h3>
-              <p className="text-muted-foreground max-w-sm">
-                Aucun véhicule ne correspond à ce filtre. Essayez un autre type.
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredVehicles.map((vehicle) => (
-                <VehicleCard
-                  key={String(vehicle.id)}
-                  vehicle={vehicle}
-                  onClick={() => setSelectedVehicle(vehicle)}
-                />
-              ))}
-            </div>
-          )}
+          <CatalogGrid
+            items={filtered}
+            isLoading={isLoading}
+            skeletonCount={6}
+            skeletonHeight={64}
+            emptyIcon={Truck}
+            emptyTitle="Aucun véhicule disponible"
+            emptyDescription="Aucun véhicule ne correspond à vos critères. Essayez un autre type ou un budget plus élevé."
+            emptyAction={
+              <Button
+                variant="outline"
+                onClick={resetFilters}
+                data-ocid="empty-reset-filters"
+              >
+                Effacer les filtres
+              </Button>
+            }
+            emptyOcid="empty-vehicles"
+            getKey={(v) => String(v.id)}
+            renderItem={(vehicle) => (
+              <VehicleCard
+                vehicle={vehicle}
+                onClick={() => setSelected(vehicle)}
+              />
+            )}
+          />
         </div>
       </section>
 
-      {/* Vehicle detail + booking modal */}
+      {/* Detail modal */}
       <Modal
-        isOpen={!!selectedVehicle}
-        onClose={() => setSelectedVehicle(null)}
-        title={selectedVehicle?.title}
+        isOpen={!!selected && !showBooking}
+        onClose={() => setSelected(null)}
+        title={selected?.title}
         size="xl"
       >
-        {selectedVehicle && (
-          <div className="flex flex-col gap-5">
-            {selectedVehicle.images[0] && (
-              <div className="rounded-lg overflow-hidden h-48 bg-muted">
-                <img
-                  src={selectedVehicle.images[0].getDirectURL()}
-                  alt={selectedVehicle.title}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            )}
-            <div className="flex flex-wrap gap-2">
-              <Badge className="bg-secondary/10 text-secondary border-secondary/20">
-                {VEHICLE_TYPE_LABELS[selectedVehicle.vehicleType] ??
-                  selectedVehicle.vehicleType}
-              </Badge>
-              <Badge variant="outline" className="flex items-center gap-1">
-                <Users className="w-3 h-3" />
-                {String(selectedVehicle.capacity)} places
-              </Badge>
-              <Badge variant="outline" className="flex items-center gap-1">
-                <CalendarDays className="w-3 h-3" />
-                {formatFCFA(selectedVehicle.pricePerDay)}/jour
-              </Badge>
-            </div>
-            <p className="text-muted-foreground text-sm leading-relaxed">
-              {selectedVehicle.description}
-            </p>
-            <div className="border-t border-border pt-4">
-              <h3 className="font-display font-semibold text-foreground mb-4">
-                Formulaire de réservation
-              </h3>
-              <BookingForm
-                vehicle={selectedVehicle}
-                onSuccess={() => setSelectedVehicle(null)}
-              />
-            </div>
-          </div>
-        )}
+        {selected ? (
+          <VehicleDetail
+            vehicle={selected}
+            onBook={() => setShowBooking(true)}
+          />
+        ) : null}
+      </Modal>
+
+      {/* Booking modal */}
+      <Modal
+        isOpen={showBooking && !!selected}
+        onClose={() => setShowBooking(false)}
+        title="Réserver ce véhicule"
+        size="md"
+      >
+        {selected ? (
+          <BookingForm
+            vehicle={selected}
+            onSuccess={() => {
+              setShowBooking(false);
+              setSelected(null);
+            }}
+          />
+        ) : null}
       </Modal>
     </div>
   );

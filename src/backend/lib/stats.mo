@@ -1,3 +1,4 @@
+import Text "mo:core/Text";
 import List "mo:core/List";
 import Common "../types/common";
 import PropTypes "../types/properties";

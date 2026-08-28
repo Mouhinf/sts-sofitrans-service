@@ -1,10 +1,17 @@
 import { AdminLayout } from "@/components/AdminLayout";
-import { ImageUpload } from "@/components/ui/ImageUpload";
-import { InputField } from "@/components/ui/InputField";
-import { Modal } from "@/components/ui/Modal";
-import { TextareaField } from "@/components/ui/TextareaField";
+import {
+  AdminAddButton,
+  AdminDataTable,
+  AdminDeleteButton,
+  AdminEditButton,
+  DeleteConfirmDialog,
+  FormModal,
+  TrainingForm,
+  type TrainingFormState,
+} from "@/components/admin";
+import { formatFCFA } from "@/components/shared";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   useAdminCreateTraining,
   useAdminDeleteTraining,
@@ -17,27 +24,11 @@ import type {
   TrainingEnrollment,
   TrainingInput,
 } from "@/types";
-import {
-  ChevronDown,
-  ChevronUp,
-  Pencil,
-  Plus,
-  Trash2,
-  Users,
-} from "lucide-react";
+import { ChevronDown, ChevronUp, Users } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
-interface FormState {
-  title: string;
-  description: string;
-  durationDays: string;
-  price: string;
-  maxCapacity: string;
-  image: ExternalBlob | null;
-}
-
-const EMPTY_FORM: FormState = {
+const EMPTY_FORM: TrainingFormState = {
   title: "",
   description: "",
   durationDays: "1",
@@ -46,19 +37,32 @@ const EMPTY_FORM: FormState = {
   image: null,
 };
 
-function toInput(f: FormState): TrainingInput {
+function toInput(f: TrainingFormState): TrainingInput {
   return {
     title: f.title,
     description: f.description,
     durationDays: BigInt(Number(f.durationDays) || 1),
     price: BigInt(Number(f.price) || 0),
     maxCapacity: BigInt(Number(f.maxCapacity) || 20),
-    image: f.image!,
+    image: f.image as ExternalBlob,
   };
 }
 
-function validate(f: FormState): Partial<Record<keyof FormState, string>> {
-  const errors: Partial<Record<keyof FormState, string>> = {};
+function fromEntity(t: Training): TrainingFormState {
+  return {
+    title: t.title,
+    description: t.description,
+    durationDays: t.durationDays.toString(),
+    price: t.price.toString(),
+    maxCapacity: t.maxCapacity.toString(),
+    image: t.image,
+  };
+}
+
+function validate(
+  f: TrainingFormState,
+): Partial<Record<keyof TrainingFormState, string>> {
+  const errors: Partial<Record<keyof TrainingFormState, string>> = {};
   if (!f.title.trim()) errors.title = "Le titre est obligatoire";
   if (!f.description.trim())
     errors.description = "La description est obligatoire";
@@ -113,35 +117,30 @@ export default function AdminFormationsPage() {
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Training | null>(null);
-  const [form, setForm] = useState<FormState>(EMPTY_FORM);
+  const [form, setForm] = useState<TrainingFormState>(EMPTY_FORM);
   const [errors, setErrors] = useState<
-    Partial<Record<keyof FormState, string>>
+    Partial<Record<keyof TrainingFormState, string>>
   >({});
   const [deleteConfirm, setDeleteConfirm] = useState<Training | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const openCreate = () => {
+  const isSubmitting = createMutation.isPending || updateMutation.isPending;
+
+  function openCreate() {
     setEditTarget(null);
     setForm(EMPTY_FORM);
     setErrors({});
     setModalOpen(true);
-  };
+  }
 
-  const openEdit = (t: Training) => {
+  function openEdit(t: Training) {
     setEditTarget(t);
-    setForm({
-      title: t.title,
-      description: t.description,
-      durationDays: t.durationDays.toString(),
-      price: t.price.toString(),
-      maxCapacity: t.maxCapacity.toString(),
-      image: t.image,
-    });
+    setForm(fromEntity(t));
     setErrors({});
     setModalOpen(true);
-  };
+  }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const errs = validate(form);
     if (Object.keys(errs).length) {
@@ -161,20 +160,18 @@ export default function AdminFormationsPage() {
     } catch {
       toast.error("Une erreur est survenue");
     }
-  };
+  }
 
-  const handleDelete = async (t: Training) => {
+  async function handleDelete() {
+    if (!deleteConfirm) return;
     try {
-      await deleteMutation.mutateAsync(t.id);
+      await deleteMutation.mutateAsync(deleteConfirm.id);
       toast.success("Formation supprimée");
       setDeleteConfirm(null);
     } catch {
       toast.error("Erreur lors de la suppression");
     }
-  };
-
-  const set = (k: keyof FormState, v: FormState[keyof FormState]) =>
-    setForm((f) => ({ ...f, [k]: v }));
+  }
 
   return (
     <AdminLayout title="Formations">
@@ -182,261 +179,138 @@ export default function AdminFormationsPage() {
         <p className="text-sm text-muted-foreground">
           {trainings?.length ?? 0} formation(s)
         </p>
-        <Button onClick={openCreate} data-ocid="add-training-btn">
-          <Plus className="h-4 w-4 mr-2" />
+        <AdminAddButton onClick={openCreate} ocid="add-training-btn">
           Nouvelle formation
-        </Button>
+        </AdminAddButton>
       </div>
 
-      <div className="bg-card border border-border rounded-xl overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/50 border-b border-border">
-              <tr>
-                <th className="text-left p-3 font-medium text-muted-foreground">
-                  Titre
-                </th>
-                <th className="text-right p-3 font-medium text-muted-foreground hidden md:table-cell">
-                  Durée (j)
-                </th>
-                <th className="text-right p-3 font-medium text-muted-foreground hidden md:table-cell">
-                  Prix (FCFA)
-                </th>
-                <th className="text-right p-3 font-medium text-muted-foreground hidden lg:table-cell">
-                  Capacité max
-                </th>
-                <th className="text-right p-3 font-medium text-muted-foreground hidden lg:table-cell">
-                  Inscrits
-                </th>
-                <th className="text-right p-3 font-medium text-muted-foreground">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {isLoading
-                ? ["r0", "r1", "r2"].map((rk) => (
-                    <tr key={rk} className="border-b border-border">
-                      {["c0", "c1", "c2", "c3", "c4", "c5"].map((ck) => (
-                        <td key={ck} className="p-3">
-                          <Skeleton className="h-4 w-full" />
-                        </td>
-                      ))}
-                    </tr>
-                  ))
-                : trainings?.map((t) => {
-                    const tid = t.id.toString();
-                    const isExpanded = expandedId === tid;
-                    return (
-                      <>
-                        <tr
-                          key={tid}
-                          className="border-b border-border hover:bg-muted/20 transition-colors"
-                          data-ocid="training-row"
-                        >
-                          <td className="p-3 font-medium text-foreground">
-                            {t.title}
-                          </td>
-                          <td className="p-3 text-right hidden md:table-cell">
-                            {t.durationDays.toString()}
-                          </td>
-                          <td className="p-3 text-right tabular-nums hidden md:table-cell">
-                            {Number(t.price).toLocaleString("fr-FR")}
-                          </td>
-                          <td className="p-3 text-right hidden lg:table-cell">
-                            {t.maxCapacity.toString()}
-                          </td>
-                          <td className="p-3 text-right hidden lg:table-cell">
-                            <span className="flex items-center justify-end gap-1">
-                              <Users className="h-3 w-3 text-muted-foreground" />
-                              {t.enrollments.length}
-                            </span>
-                          </td>
-                          <td className="p-3">
-                            <div className="flex items-center justify-end gap-1">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() =>
-                                  setExpandedId(isExpanded ? null : tid)
-                                }
-                                aria-label="Voir inscrits"
-                                data-ocid="toggle-enrollments-btn"
-                              >
-                                {isExpanded ? (
-                                  <ChevronUp className="h-4 w-4" />
-                                ) : (
-                                  <ChevronDown className="h-4 w-4" />
-                                )}
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => openEdit(t)}
-                                aria-label="Modifier"
-                                data-ocid="edit-training-btn"
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => setDeleteConfirm(t)}
-                                className="text-destructive hover:text-destructive"
-                                aria-label="Supprimer"
-                                data-ocid="delete-training-btn"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                        {isExpanded && (
-                          <tr
-                            key={`${tid}-enrollments`}
-                            className="border-b border-border bg-muted/20"
-                          >
-                            <td colSpan={6} className="px-6 py-3">
-                              <p className="text-xs font-semibold text-foreground mb-2">
-                                Inscrits à cette formation
-                              </p>
-                              <EnrollmentList enrollments={t.enrollments} />
-                            </td>
-                          </tr>
-                        )}
-                      </>
-                    );
-                  })}
-              {!isLoading && !trainings?.length && (
-                <tr>
-                  <td
-                    colSpan={6}
-                    className="p-8 text-center text-muted-foreground"
-                    data-ocid="empty-admin-trainings"
-                  >
-                    Aucune formation. Créez-en une !
-                  </td>
-                </tr>
+      <AdminDataTable
+        items={trainings}
+        isLoading={isLoading}
+        rowOcid={() => "training-row"}
+        getRowKey={(t) => t.id.toString()}
+        emptyOcid="empty-admin-trainings"
+        emptyMessage="Aucune formation. Créez-en une !"
+        skeletonCols={6}
+        columns={[
+          {
+            key: "image",
+            label: "Image",
+            render: (t) =>
+              t.image ? (
+                <img
+                  src={t.image.getDirectURL()}
+                  alt={t.title}
+                  className="h-10 w-14 object-cover rounded-md"
+                />
+              ) : (
+                <div className="h-10 w-14 bg-muted rounded-md" />
+              ),
+          },
+          {
+            key: "title",
+            label: "Titre",
+            render: (t) => (
+              <span className="font-medium text-foreground max-w-[180px] truncate block">
+                {t.title}
+              </span>
+            ),
+          },
+          {
+            key: "duration",
+            label: "Durée",
+            className: "text-right tabular-nums",
+            thClassName: "text-right",
+            showOn: "md",
+            render: (t) => `${t.durationDays.toString()} j`,
+          },
+          {
+            key: "price",
+            label: "Prix",
+            className: "text-right tabular-nums",
+            thClassName: "text-right",
+            showOn: "md",
+            render: (t) => formatFCFA(t.price),
+          },
+          {
+            key: "capacity",
+            label: "Inscrits",
+            className: "text-center",
+            thClassName: "text-center",
+            showOn: "lg",
+            render: (t) => (
+              <Badge variant="outline" className="gap-1">
+                <Users className="h-3 w-3" />
+                {t.enrollments.length}/{t.maxCapacity.toString()}
+              </Badge>
+            ),
+          },
+        ]}
+        renderActions={(t) => (
+          <>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() =>
+                setExpandedId((id) =>
+                  id === t.id.toString() ? null : t.id.toString(),
+                )
+              }
+              aria-label="Voir les inscrits"
+              data-ocid="view-enrollments-btn"
+            >
+              {expandedId === t.id.toString() ? (
+                <ChevronUp className="h-4 w-4" />
+              ) : (
+                <ChevronDown className="h-4 w-4" />
               )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+            </Button>
+            <AdminEditButton
+              onClick={() => openEdit(t)}
+              ocid="edit-training-btn"
+            />
+            <AdminDeleteButton
+              onClick={() => setDeleteConfirm(t)}
+              ocid="delete-training-btn"
+            />
+          </>
+        )}
+      />
 
-      <Modal
-        isOpen={modalOpen}
+      {expandedId
+        ? (() => {
+            const t = trainings?.find((x) => x.id.toString() === expandedId);
+            if (!t) return null;
+            return (
+              <div className="mt-4 bg-card border border-border rounded-xl p-4">
+                <h3 className="text-sm font-semibold mb-2">
+                  Inscrits à cette formation
+                </h3>
+                <EnrollmentList enrollments={t.enrollments} />
+              </div>
+            );
+          })()
+        : null}
+
+      <FormModal
+        open={modalOpen}
         onClose={() => setModalOpen(false)}
         title={editTarget ? "Modifier la formation" : "Nouvelle formation"}
-        size="lg"
+        onSubmit={handleSubmit}
+        isSubmitting={isSubmitting}
+        submitOcid="save-training-btn"
       >
-        <form
-          onSubmit={handleSubmit}
-          className="flex flex-col gap-4 max-h-[70vh] overflow-y-auto pr-1"
-        >
-          <InputField
-            label="Titre"
-            required
-            value={form.title}
-            onChange={(e) => set("title", e.target.value)}
-            error={errors.title}
-          />
-          <TextareaField
-            label="Description"
-            required
-            value={form.description}
-            onChange={(e) => set("description", e.target.value)}
-            error={errors.description}
-            rows={3}
-          />
-          <div className="grid grid-cols-3 gap-4">
-            <InputField
-              label="Durée (jours)"
-              required
-              type="number"
-              min="1"
-              value={form.durationDays}
-              onChange={(e) => set("durationDays", e.target.value)}
-              error={errors.durationDays}
-            />
-            <InputField
-              label="Prix (FCFA)"
-              required
-              type="number"
-              min="0"
-              value={form.price}
-              onChange={(e) => set("price", e.target.value)}
-              error={errors.price}
-            />
-            <InputField
-              label="Capacité max"
-              required
-              type="number"
-              min="1"
-              value={form.maxCapacity}
-              onChange={(e) => set("maxCapacity", e.target.value)}
-              error={errors.maxCapacity}
-            />
-          </div>
-          <ImageUpload
-            label="Image"
-            value={form.image}
-            onChange={(blob) => set("image", blob)}
-          />
-          {errors.image && (
-            <p className="text-xs text-destructive">{errors.image}</p>
-          )}
-          <div className="flex gap-3 pt-2 border-t border-border">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setModalOpen(false)}
-              className="flex-1"
-            >
-              Annuler
-            </Button>
-            <Button
-              type="submit"
-              className="flex-1"
-              disabled={createMutation.isPending || updateMutation.isPending}
-              data-ocid="save-training-btn"
-            >
-              {createMutation.isPending || updateMutation.isPending
-                ? "Enregistrement…"
-                : "Enregistrer"}
-            </Button>
-          </div>
-        </form>
-      </Modal>
+        <TrainingForm value={form} onChange={setForm} errors={errors} />
+      </FormModal>
 
-      <Modal
-        isOpen={!!deleteConfirm}
+      <DeleteConfirmDialog
+        open={!!deleteConfirm}
         onClose={() => setDeleteConfirm(null)}
-        title="Confirmer la suppression"
-        size="sm"
-      >
-        <p className="text-sm text-muted-foreground mb-4">
-          Supprimer <strong>{deleteConfirm?.title}</strong> ? Cette action est
-          irréversible.
-        </p>
-        <div className="flex gap-3">
-          <Button
-            variant="outline"
-            onClick={() => setDeleteConfirm(null)}
-            className="flex-1"
-          >
-            Annuler
-          </Button>
-          <Button
-            variant="destructive"
-            onClick={() => deleteConfirm && handleDelete(deleteConfirm)}
-            disabled={deleteMutation.isPending}
-            className="flex-1"
-            data-ocid="confirm-delete-btn"
-          >
-            {deleteMutation.isPending ? "Suppression…" : "Supprimer"}
-          </Button>
-        </div>
-      </Modal>
+        onConfirm={handleDelete}
+        itemName={deleteConfirm?.title}
+        entityLabel="cette formation"
+        isPending={deleteMutation.isPending}
+      />
     </AdminLayout>
   );
 }

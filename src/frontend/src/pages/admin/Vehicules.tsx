@@ -1,62 +1,43 @@
 import { AdminLayout } from "@/components/AdminLayout";
-import { ImageUpload } from "@/components/ui/ImageUpload";
-import { InputField } from "@/components/ui/InputField";
-import { Modal } from "@/components/ui/Modal";
-import { SelectField } from "@/components/ui/SelectField";
-import { TextareaField } from "@/components/ui/TextareaField";
+import {
+  AdminAddButton,
+  AdminDataTable,
+  AdminDeleteButton,
+  AdminEditButton,
+  DeleteConfirmDialog,
+  FormModal,
+  VEHICLE_TYPE_OPTIONS,
+  VehicleForm,
+  type VehicleFormState,
+} from "@/components/admin";
+import { formatFCFA } from "@/components/shared";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   useAdminCreateVehicle,
   useAdminDeleteVehicle,
   useAdminUpdateVehicle,
   useAdminVehicles,
 } from "@/hooks/useBackend";
-import type { ExternalBlob, Vehicle, VehicleInput, VehicleType } from "@/types";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import type { Vehicle, VehicleInput, VehicleType } from "@/types";
 import { useState } from "react";
 import { toast } from "sonner";
 
-const VEHICLE_TYPE_LABELS: Record<string, string> = {
-  car: "Voiture",
-  bus: "Bus",
-  truck: "Camion",
-  minibus: "Minibus",
-};
+const VEHICLE_TYPE_LABELS = Object.fromEntries(
+  VEHICLE_TYPE_OPTIONS.map((o) => [o.value, o.label]),
+);
 
-const TYPE_OPTIONS = [
-  { value: "car", label: "Voiture" },
-  { value: "bus", label: "Bus" },
-  { value: "truck", label: "Camion" },
-  { value: "minibus", label: "Minibus" },
-];
-
-interface FormState {
-  title: string;
-  model: string;
-  description: string;
-  vehicleType: string;
-  capacity: string;
-  pricePerDay: string;
-  featured: boolean;
-  images: ExternalBlob[];
-}
-
-const EMPTY_FORM: FormState = {
+const EMPTY_FORM: VehicleFormState = {
   title: "",
   model: "",
   description: "",
-  vehicleType: "car",
+  vehicleType: "car" as VehicleType,
   capacity: "1",
   pricePerDay: "",
   featured: false,
   images: [],
 };
 
-function toInput(f: FormState): VehicleInput {
+function toInput(f: VehicleFormState): VehicleInput {
   return {
     title: f.title,
     model: f.model,
@@ -69,8 +50,23 @@ function toInput(f: FormState): VehicleInput {
   };
 }
 
-function validate(f: FormState): Partial<Record<keyof FormState, string>> {
-  const errors: Partial<Record<keyof FormState, string>> = {};
+function fromEntity(v: Vehicle): VehicleFormState {
+  return {
+    title: v.title,
+    model: v.model,
+    description: v.description,
+    vehicleType: v.vehicleType,
+    capacity: v.capacity.toString(),
+    pricePerDay: v.pricePerDay.toString(),
+    featured: v.featured,
+    images: v.images,
+  };
+}
+
+function validate(
+  f: VehicleFormState,
+): Partial<Record<keyof VehicleFormState, string>> {
+  const errors: Partial<Record<keyof VehicleFormState, string>> = {};
   if (!f.title.trim()) errors.title = "Le titre est obligatoire";
   if (!f.model.trim()) errors.model = "Le modèle est obligatoire";
   if (!f.description.trim())
@@ -90,36 +86,29 @@ export default function AdminVehiculesPage() {
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Vehicle | null>(null);
-  const [form, setForm] = useState<FormState>(EMPTY_FORM);
+  const [form, setForm] = useState<VehicleFormState>(EMPTY_FORM);
   const [errors, setErrors] = useState<
-    Partial<Record<keyof FormState, string>>
+    Partial<Record<keyof VehicleFormState, string>>
   >({});
   const [deleteConfirm, setDeleteConfirm] = useState<Vehicle | null>(null);
 
-  const openCreate = () => {
+  const isSubmitting = createMutation.isPending || updateMutation.isPending;
+
+  function openCreate() {
     setEditTarget(null);
     setForm(EMPTY_FORM);
     setErrors({});
     setModalOpen(true);
-  };
+  }
 
-  const openEdit = (v: Vehicle) => {
+  function openEdit(v: Vehicle) {
     setEditTarget(v);
-    setForm({
-      title: v.title,
-      model: v.model,
-      description: v.description,
-      vehicleType: v.vehicleType,
-      capacity: v.capacity.toString(),
-      pricePerDay: v.pricePerDay.toString(),
-      featured: v.featured,
-      images: v.images,
-    });
+    setForm(fromEntity(v));
     setErrors({});
     setModalOpen(true);
-  };
+  }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const errs = validate(form);
     if (Object.keys(errs).length) {
@@ -139,20 +128,18 @@ export default function AdminVehiculesPage() {
     } catch {
       toast.error("Une erreur est survenue");
     }
-  };
+  }
 
-  const handleDelete = async (v: Vehicle) => {
+  async function handleDelete() {
+    if (!deleteConfirm) return;
     try {
-      await deleteMutation.mutateAsync(v.id);
+      await deleteMutation.mutateAsync(deleteConfirm.id);
       toast.success("Véhicule supprimé");
       setDeleteConfirm(null);
     } catch {
       toast.error("Erreur lors de la suppression");
     }
-  };
-
-  const set = (k: keyof FormState, val: FormState[keyof FormState]) =>
-    setForm((f) => ({ ...f, [k]: val }));
+  }
 
   return (
     <AdminLayout title="Véhicules">
@@ -160,283 +147,125 @@ export default function AdminVehiculesPage() {
         <p className="text-sm text-muted-foreground">
           {vehicles?.length ?? 0} véhicule(s)
         </p>
-        <Button onClick={openCreate} data-ocid="add-vehicle-btn">
-          <Plus className="h-4 w-4 mr-2" />
+        <AdminAddButton onClick={openCreate} ocid="add-vehicle-btn">
           Ajouter un véhicule
-        </Button>
+        </AdminAddButton>
       </div>
 
-      <div className="bg-card border border-border rounded-xl overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/50 border-b border-border">
-              <tr>
-                <th className="text-left p-3 font-medium text-muted-foreground">
-                  Image
-                </th>
-                <th className="text-left p-3 font-medium text-muted-foreground">
-                  Titre
-                </th>
-                <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">
-                  Modèle
-                </th>
-                <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">
-                  Type
-                </th>
-                <th className="text-right p-3 font-medium text-muted-foreground hidden lg:table-cell">
-                  Capacité
-                </th>
-                <th className="text-right p-3 font-medium text-muted-foreground hidden lg:table-cell">
-                  Prix/jour
-                </th>
-                <th className="text-center p-3 font-medium text-muted-foreground hidden lg:table-cell">
-                  Vedette
-                </th>
-                <th className="text-right p-3 font-medium text-muted-foreground">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {isLoading
-                ? ["r0", "r1", "r2", "r3"].map((rk) => (
-                    <tr key={rk} className="border-b border-border">
-                      {["c0", "c1", "c2", "c3", "c4", "c5", "c6", "c7"].map(
-                        (ck) => (
-                          <td key={ck} className="p-3">
-                            <Skeleton className="h-4 w-full" />
-                          </td>
-                        ),
-                      )}
-                    </tr>
-                  ))
-                : vehicles?.map((v) => (
-                    <tr
-                      key={v.id.toString()}
-                      className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors"
-                      data-ocid="vehicle-row"
-                    >
-                      <td className="p-3">
-                        {v.images[0] ? (
-                          <img
-                            src={v.images[0].getDirectURL()}
-                            alt={v.title}
-                            className="h-10 w-14 object-cover rounded-md"
-                          />
-                        ) : (
-                          <div className="h-10 w-14 bg-muted rounded-md" />
-                        )}
-                      </td>
-                      <td className="p-3 font-medium text-foreground max-w-[160px] truncate">
-                        {v.title}
-                      </td>
-                      <td className="p-3 text-muted-foreground hidden md:table-cell">
-                        {v.model}
-                      </td>
-                      <td className="p-3 hidden md:table-cell">
-                        <Badge variant="outline">
-                          {VEHICLE_TYPE_LABELS[v.vehicleType] ?? v.vehicleType}
-                        </Badge>
-                      </td>
-                      <td className="p-3 text-right tabular-nums hidden lg:table-cell">
-                        {v.capacity.toString()}
-                      </td>
-                      <td className="p-3 text-right tabular-nums hidden lg:table-cell">
-                        {Number(v.pricePerDay).toLocaleString("fr-FR")}
-                      </td>
-                      <td className="p-3 text-center hidden lg:table-cell">
-                        {v.featured ? (
-                          <Badge className="bg-primary/10 text-primary border-primary/20">
-                            Oui
-                          </Badge>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                      </td>
-                      <td className="p-3">
-                        <div className="flex items-center justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => openEdit(v)}
-                            aria-label="Modifier"
-                            data-ocid="edit-vehicle-btn"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setDeleteConfirm(v)}
-                            className="text-destructive hover:text-destructive"
-                            aria-label="Supprimer"
-                            data-ocid="delete-vehicle-btn"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-              {!isLoading && !vehicles?.length && (
-                <tr>
-                  <td
-                    colSpan={8}
-                    className="p-8 text-center text-muted-foreground"
-                    data-ocid="empty-admin-vehicles"
-                  >
-                    Aucun véhicule. Ajoutez-en un !
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <AdminDataTable
+        items={vehicles}
+        isLoading={isLoading}
+        rowOcid={() => "vehicle-row"}
+        getRowKey={(v) => v.id.toString()}
+        emptyOcid="empty-admin-vehicles"
+        emptyMessage="Aucun véhicule. Ajoutez-en un !"
+        skeletonCols={8}
+        columns={[
+          {
+            key: "image",
+            label: "Image",
+            render: (v) =>
+              v.images[0] ? (
+                <img
+                  src={v.images[0].getDirectURL()}
+                  alt={v.title}
+                  className="h-10 w-14 object-cover rounded-md"
+                />
+              ) : (
+                <div className="h-10 w-14 bg-muted rounded-md" />
+              ),
+          },
+          {
+            key: "title",
+            label: "Titre",
+            render: (v) => (
+              <span className="font-medium text-foreground max-w-[160px] truncate block">
+                {v.title}
+              </span>
+            ),
+          },
+          {
+            key: "model",
+            label: "Modèle",
+            className: "text-muted-foreground",
+            showOn: "md",
+            render: (v) => v.model,
+          },
+          {
+            key: "type",
+            label: "Type",
+            showOn: "md",
+            render: (v) => (
+              <Badge variant="outline">
+                {VEHICLE_TYPE_LABELS[v.vehicleType] ?? v.vehicleType}
+              </Badge>
+            ),
+          },
+          {
+            key: "capacity",
+            label: "Capacité",
+            className: "text-right tabular-nums",
+            thClassName: "text-right",
+            showOn: "lg",
+            render: (v) => v.capacity.toString(),
+          },
+          {
+            key: "price",
+            label: "Prix/jour",
+            className: "text-right tabular-nums",
+            thClassName: "text-right",
+            showOn: "lg",
+            render: (v) => formatFCFA(v.pricePerDay),
+          },
+          {
+            key: "featured",
+            label: "Vedette",
+            className: "text-center",
+            thClassName: "text-center",
+            showOn: "lg",
+            render: (v) =>
+              v.featured ? (
+                <Badge className="bg-primary/10 text-primary border-primary/20">
+                  Oui
+                </Badge>
+              ) : (
+                <span className="text-muted-foreground">—</span>
+              ),
+          },
+        ]}
+        renderActions={(v) => (
+          <>
+            <AdminEditButton
+              onClick={() => openEdit(v)}
+              ocid="edit-vehicle-btn"
+            />
+            <AdminDeleteButton
+              onClick={() => setDeleteConfirm(v)}
+              ocid="delete-vehicle-btn"
+            />
+          </>
+        )}
+      />
 
-      <Modal
-        isOpen={modalOpen}
+      <FormModal
+        open={modalOpen}
         onClose={() => setModalOpen(false)}
         title={editTarget ? "Modifier le véhicule" : "Ajouter un véhicule"}
-        size="xl"
+        onSubmit={handleSubmit}
+        isSubmitting={isSubmitting}
+        submitOcid="save-vehicle-btn"
       >
-        <form
-          onSubmit={handleSubmit}
-          className="flex flex-col gap-4 max-h-[70vh] overflow-y-auto pr-1"
-        >
-          <div className="grid grid-cols-2 gap-4">
-            <InputField
-              label="Titre"
-              required
-              value={form.title}
-              onChange={(e) => set("title", e.target.value)}
-              error={errors.title}
-            />
-            <InputField
-              label="Modèle"
-              required
-              value={form.model}
-              onChange={(e) => set("model", e.target.value)}
-              error={errors.model}
-            />
-            <SelectField
-              label="Type"
-              options={TYPE_OPTIONS}
-              value={form.vehicleType}
-              onChange={(e) => set("vehicleType", e.target.value)}
-            />
-            <InputField
-              label="Capacité (personnes)"
-              required
-              type="number"
-              min="1"
-              value={form.capacity}
-              onChange={(e) => set("capacity", e.target.value)}
-              error={errors.capacity}
-            />
-            <InputField
-              label="Prix/jour (FCFA)"
-              required
-              type="number"
-              min="0"
-              value={form.pricePerDay}
-              onChange={(e) => set("pricePerDay", e.target.value)}
-              error={errors.pricePerDay}
-            />
-            <div />
-            <div className="col-span-2">
-              <TextareaField
-                label="Description"
-                required
-                value={form.description}
-                onChange={(e) => set("description", e.target.value)}
-                error={errors.description}
-                rows={3}
-              />
-            </div>
-            <div className="col-span-2">
-              <p className="text-sm font-medium text-foreground mb-2">Images</p>
-              <div className="grid grid-cols-2 gap-3">
-                {["img0", "img1", "img2", "img3"]
-                  .slice(0, Math.min(4, form.images.length + 1))
-                  .map((slotKey, i) => (
-                    <ImageUpload
-                      key={slotKey}
-                      value={form.images[i] ?? null}
-                      onChange={(blob) => {
-                        const imgs = [...form.images];
-                        if (blob) {
-                          imgs[i] = blob;
-                        } else {
-                          imgs.splice(i, 1);
-                        }
-                        set("images", imgs);
-                      }}
-                    />
-                  ))}
-              </div>
-            </div>
-            <div className="col-span-2 flex items-center gap-2">
-              <Checkbox
-                id="featured-v"
-                checked={form.featured}
-                onCheckedChange={(v) => set("featured", !!v)}
-              />
-              <Label htmlFor="featured-v">Mettre en vedette</Label>
-            </div>
-          </div>
-          <div className="flex gap-3 pt-2 border-t border-border">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setModalOpen(false)}
-              className="flex-1"
-            >
-              Annuler
-            </Button>
-            <Button
-              type="submit"
-              className="flex-1"
-              disabled={createMutation.isPending || updateMutation.isPending}
-              data-ocid="save-vehicle-btn"
-            >
-              {createMutation.isPending || updateMutation.isPending
-                ? "Enregistrement…"
-                : "Enregistrer"}
-            </Button>
-          </div>
-        </form>
-      </Modal>
+        <VehicleForm value={form} onChange={setForm} errors={errors} />
+      </FormModal>
 
-      <Modal
-        isOpen={!!deleteConfirm}
+      <DeleteConfirmDialog
+        open={!!deleteConfirm}
         onClose={() => setDeleteConfirm(null)}
-        title="Confirmer la suppression"
-        size="sm"
-      >
-        <p className="text-sm text-muted-foreground mb-4">
-          Supprimer <strong>{deleteConfirm?.title}</strong> ? Cette action est
-          irréversible.
-        </p>
-        <div className="flex gap-3">
-          <Button
-            variant="outline"
-            onClick={() => setDeleteConfirm(null)}
-            className="flex-1"
-          >
-            Annuler
-          </Button>
-          <Button
-            variant="destructive"
-            onClick={() => deleteConfirm && handleDelete(deleteConfirm)}
-            disabled={deleteMutation.isPending}
-            className="flex-1"
-            data-ocid="confirm-delete-btn"
-          >
-            {deleteMutation.isPending ? "Suppression…" : "Supprimer"}
-          </Button>
-        </div>
-      </Modal>
+        onConfirm={handleDelete}
+        itemName={deleteConfirm?.title}
+        entityLabel="ce véhicule"
+        isPending={deleteMutation.isPending}
+      />
     </AdminLayout>
   );
 }

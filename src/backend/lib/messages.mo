@@ -1,13 +1,14 @@
 import List "mo:core/List";
 import Runtime "mo:core/Runtime";
 import Time "mo:core/Time";
+import Text "mo:core/Text";   // ← ajouter ceci
 import Types "../types/messages";
 import Common "../types/common";
 
 module {
   // Validation basique du format email
   func isValidEmail(email : Text) : Bool {
-    email.contains(#char '@') and email.contains(#char '.')
+    Text.contains(email, #text "@") and Text.contains(email, #text ".")  // ← corriger ceci
   };
 
   // Retourne tous les messages

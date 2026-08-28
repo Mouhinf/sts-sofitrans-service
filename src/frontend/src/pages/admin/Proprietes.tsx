@@ -1,58 +1,32 @@
 import { AdminLayout } from "@/components/AdminLayout";
-import { ImageUpload } from "@/components/ui/ImageUpload";
-import { InputField } from "@/components/ui/InputField";
-import { Modal } from "@/components/ui/Modal";
-import { SelectField } from "@/components/ui/SelectField";
-import { TextareaField } from "@/components/ui/TextareaField";
+import {
+  AdminAddButton,
+  AdminDataTable,
+  AdminDeleteButton,
+  AdminEditButton,
+  DeleteConfirmDialog,
+  FormModal,
+  PROPERTY_TYPE_OPTIONS,
+  PropertyForm,
+  type PropertyFormState,
+} from "@/components/admin";
+import { formatFCFA } from "@/components/shared";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   useAdminCreateProperty,
   useAdminDeleteProperty,
   useAdminProperties,
   useAdminUpdateProperty,
 } from "@/hooks/useBackend";
-import type {
-  ExternalBlob,
-  Property,
-  PropertyInput,
-  PropertyType,
-} from "@/types";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import type { Property, PropertyInput, PropertyType } from "@/types";
 import { useState } from "react";
 import { toast } from "sonner";
 
-const PROPERTY_TYPE_LABELS: Record<string, string> = {
-  house: "Maison",
-  apartment: "Appartement",
-  land: "Terrain",
-  office: "Bureau",
-};
+const PROPERTY_TYPE_LABELS = Object.fromEntries(
+  PROPERTY_TYPE_OPTIONS.map((o) => [o.value, o.label]),
+);
 
-const TYPE_OPTIONS = [
-  { value: "house", label: "Maison" },
-  { value: "apartment", label: "Appartement" },
-  { value: "land", label: "Terrain" },
-  { value: "office", label: "Bureau" },
-];
-
-interface FormState {
-  title: string;
-  description: string;
-  price: string;
-  location: string;
-  bedrooms: string;
-  bathrooms: string;
-  areaSqm: string;
-  propertyType: string;
-  featured: boolean;
-  images: ExternalBlob[];
-}
-
-const EMPTY_FORM: FormState = {
+const EMPTY_FORM: PropertyFormState = {
   title: "",
   description: "",
   price: "",
@@ -60,12 +34,12 @@ const EMPTY_FORM: FormState = {
   bedrooms: "0",
   bathrooms: "0",
   areaSqm: "0",
-  propertyType: "house",
+  propertyType: "house" as PropertyType,
   featured: false,
   images: [],
 };
 
-function toInput(f: FormState): PropertyInput {
+function toInput(f: PropertyFormState): PropertyInput {
   return {
     title: f.title,
     description: f.description,
@@ -80,8 +54,25 @@ function toInput(f: FormState): PropertyInput {
   };
 }
 
-function validate(f: FormState): Partial<Record<keyof FormState, string>> {
-  const errors: Partial<Record<keyof FormState, string>> = {};
+function fromEntity(p: Property): PropertyFormState {
+  return {
+    title: p.title,
+    description: p.description,
+    price: p.price.toString(),
+    location: p.location,
+    bedrooms: p.bedrooms.toString(),
+    bathrooms: p.bathrooms.toString(),
+    areaSqm: p.areaSqm.toString(),
+    propertyType: p.propertyType,
+    featured: p.featured,
+    images: p.images,
+  };
+}
+
+function validate(
+  f: PropertyFormState,
+): Partial<Record<keyof PropertyFormState, string>> {
+  const errors: Partial<Record<keyof PropertyFormState, string>> = {};
   if (!f.title.trim()) errors.title = "Le titre est obligatoire";
   if (!f.description.trim())
     errors.description = "La description est obligatoire";
@@ -99,38 +90,29 @@ export default function AdminProprietesPage() {
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Property | null>(null);
-  const [form, setForm] = useState<FormState>(EMPTY_FORM);
+  const [form, setForm] = useState<PropertyFormState>(EMPTY_FORM);
   const [errors, setErrors] = useState<
-    Partial<Record<keyof FormState, string>>
+    Partial<Record<keyof PropertyFormState, string>>
   >({});
   const [deleteConfirm, setDeleteConfirm] = useState<Property | null>(null);
 
-  const openCreate = () => {
+  const isSubmitting = createMutation.isPending || updateMutation.isPending;
+
+  function openCreate() {
     setEditTarget(null);
     setForm(EMPTY_FORM);
     setErrors({});
     setModalOpen(true);
-  };
+  }
 
-  const openEdit = (prop: Property) => {
+  function openEdit(prop: Property) {
     setEditTarget(prop);
-    setForm({
-      title: prop.title,
-      description: prop.description,
-      price: prop.price.toString(),
-      location: prop.location,
-      bedrooms: prop.bedrooms.toString(),
-      bathrooms: prop.bathrooms.toString(),
-      areaSqm: prop.areaSqm.toString(),
-      propertyType: prop.propertyType,
-      featured: prop.featured,
-      images: prop.images,
-    });
+    setForm(fromEntity(prop));
     setErrors({});
     setModalOpen(true);
-  };
+  }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const errs = validate(form);
     if (Object.keys(errs).length) {
@@ -150,20 +132,18 @@ export default function AdminProprietesPage() {
     } catch {
       toast.error("Une erreur est survenue");
     }
-  };
+  }
 
-  const handleDelete = async (prop: Property) => {
+  async function handleDelete() {
+    if (!deleteConfirm) return;
     try {
-      await deleteMutation.mutateAsync(prop.id);
+      await deleteMutation.mutateAsync(deleteConfirm.id);
       toast.success("Propriété supprimée");
       setDeleteConfirm(null);
     } catch {
       toast.error("Erreur lors de la suppression");
     }
-  };
-
-  const set = (k: keyof FormState, v: FormState[keyof FormState]) =>
-    setForm((f) => ({ ...f, [k]: v }));
+  }
 
   return (
     <AdminLayout title="Propriétés">
@@ -171,291 +151,117 @@ export default function AdminProprietesPage() {
         <p className="text-sm text-muted-foreground">
           {properties?.length ?? 0} propriété(s)
         </p>
-        <Button onClick={openCreate} data-ocid="add-property-btn">
-          <Plus className="h-4 w-4 mr-2" />
+        <AdminAddButton onClick={openCreate} ocid="add-property-btn">
           Ajouter une propriété
-        </Button>
+        </AdminAddButton>
       </div>
 
-      <div className="bg-card border border-border rounded-xl overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/50 border-b border-border">
-              <tr>
-                <th className="text-left p-3 font-medium text-muted-foreground">
-                  Image
-                </th>
-                <th className="text-left p-3 font-medium text-muted-foreground">
-                  Titre
-                </th>
-                <th className="text-left p-3 font-medium text-muted-foreground hidden md:table-cell">
-                  Localisation
-                </th>
-                <th className="text-right p-3 font-medium text-muted-foreground hidden md:table-cell">
-                  Prix (FCFA)
-                </th>
-                <th className="text-left p-3 font-medium text-muted-foreground hidden lg:table-cell">
-                  Type
-                </th>
-                <th className="text-center p-3 font-medium text-muted-foreground hidden lg:table-cell">
-                  Vedette
-                </th>
-                <th className="text-right p-3 font-medium text-muted-foreground">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {isLoading
-                ? ["r0", "r1", "r2", "r3"].map((rk) => (
-                    <tr key={rk} className="border-b border-border">
-                      {["c0", "c1", "c2", "c3", "c4", "c5", "c6"].map((ck) => (
-                        <td key={ck} className="p-3">
-                          <Skeleton className="h-4 w-full" />
-                        </td>
-                      ))}
-                    </tr>
-                  ))
-                : properties?.map((prop) => (
-                    <tr
-                      key={prop.id.toString()}
-                      className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors"
-                      data-ocid="property-row"
-                    >
-                      <td className="p-3">
-                        {prop.images[0] ? (
-                          <img
-                            src={prop.images[0].getDirectURL()}
-                            alt={prop.title}
-                            className="h-10 w-14 object-cover rounded-md"
-                          />
-                        ) : (
-                          <div className="h-10 w-14 bg-muted rounded-md" />
-                        )}
-                      </td>
-                      <td className="p-3 font-medium text-foreground max-w-[180px] truncate">
-                        {prop.title}
-                      </td>
-                      <td className="p-3 text-muted-foreground hidden md:table-cell truncate max-w-[120px]">
-                        {prop.location}
-                      </td>
-                      <td className="p-3 text-right tabular-nums hidden md:table-cell">
-                        {Number(prop.price).toLocaleString("fr-FR")}
-                      </td>
-                      <td className="p-3 hidden lg:table-cell">
-                        <Badge variant="outline">
-                          {PROPERTY_TYPE_LABELS[prop.propertyType] ??
-                            prop.propertyType}
-                        </Badge>
-                      </td>
-                      <td className="p-3 text-center hidden lg:table-cell">
-                        {prop.featured ? (
-                          <Badge className="bg-primary/10 text-primary border-primary/20">
-                            Oui
-                          </Badge>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                      </td>
-                      <td className="p-3">
-                        <div className="flex items-center justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => openEdit(prop)}
-                            aria-label="Modifier"
-                            data-ocid="edit-property-btn"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setDeleteConfirm(prop)}
-                            className="text-destructive hover:text-destructive"
-                            aria-label="Supprimer"
-                            data-ocid="delete-property-btn"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-              {!isLoading && !properties?.length && (
-                <tr>
-                  <td
-                    colSpan={7}
-                    className="p-8 text-center text-muted-foreground"
-                    data-ocid="empty-admin-properties"
-                  >
-                    Aucune propriété. Ajoutez-en une !
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <AdminDataTable
+        items={properties}
+        isLoading={isLoading}
+        rowOcid={() => "property-row"}
+        getRowKey={(p) => p.id.toString()}
+        emptyOcid="empty-admin-properties"
+        emptyMessage="Aucune propriété. Ajoutez-en une !"
+        skeletonCols={7}
+        columns={[
+          {
+            key: "image",
+            label: "Image",
+            render: (p) =>
+              p.images[0] ? (
+                <img
+                  src={p.images[0].getDirectURL()}
+                  alt={p.title}
+                  className="h-10 w-14 object-cover rounded-md"
+                />
+              ) : (
+                <div className="h-10 w-14 bg-muted rounded-md" />
+              ),
+          },
+          {
+            key: "title",
+            label: "Titre",
+            render: (p) => (
+              <span className="font-medium text-foreground max-w-[180px] truncate block">
+                {p.title}
+              </span>
+            ),
+          },
+          {
+            key: "location",
+            label: "Localisation",
+            className: "text-muted-foreground truncate max-w-[120px]",
+            showOn: "md",
+            render: (p) => p.location,
+          },
+          {
+            key: "price",
+            label: "Prix (FCFA)",
+            className: "text-right tabular-nums",
+            thClassName: "text-right",
+            showOn: "md",
+            render: (p) => formatFCFA(p.price),
+          },
+          {
+            key: "type",
+            label: "Type",
+            showOn: "lg",
+            render: (p) => (
+              <Badge variant="outline">
+                {PROPERTY_TYPE_LABELS[p.propertyType] ?? p.propertyType}
+              </Badge>
+            ),
+          },
+          {
+            key: "featured",
+            label: "Vedette",
+            className: "text-center",
+            thClassName: "text-center",
+            showOn: "lg",
+            render: (p) =>
+              p.featured ? (
+                <Badge className="bg-primary/10 text-primary border-primary/20">
+                  Oui
+                </Badge>
+              ) : (
+                <span className="text-muted-foreground">—</span>
+              ),
+          },
+        ]}
+        renderActions={(p) => (
+          <>
+            <AdminEditButton
+              onClick={() => openEdit(p)}
+              ocid="edit-property-btn"
+            />
+            <AdminDeleteButton
+              onClick={() => setDeleteConfirm(p)}
+              ocid="delete-property-btn"
+            />
+          </>
+        )}
+      />
 
-      <Modal
-        isOpen={modalOpen}
+      <FormModal
+        open={modalOpen}
         onClose={() => setModalOpen(false)}
         title={editTarget ? "Modifier la propriété" : "Ajouter une propriété"}
-        size="xl"
+        onSubmit={handleSubmit}
+        isSubmitting={isSubmitting}
+        submitOcid="save-property-btn"
       >
-        <form
-          onSubmit={handleSubmit}
-          className="flex flex-col gap-4 max-h-[70vh] overflow-y-auto pr-1"
-        >
-          <div className="grid grid-cols-2 gap-4">
-            <div className="col-span-2">
-              <InputField
-                label="Titre"
-                required
-                value={form.title}
-                onChange={(e) => set("title", e.target.value)}
-                error={errors.title}
-              />
-            </div>
-            <InputField
-              label="Prix (FCFA)"
-              required
-              type="number"
-              min="0"
-              value={form.price}
-              onChange={(e) => set("price", e.target.value)}
-              error={errors.price}
-            />
-            <InputField
-              label="Localisation"
-              required
-              value={form.location}
-              onChange={(e) => set("location", e.target.value)}
-              error={errors.location}
-            />
-            <InputField
-              label="Chambres"
-              type="number"
-              min="0"
-              value={form.bedrooms}
-              onChange={(e) => set("bedrooms", e.target.value)}
-            />
-            <InputField
-              label="Salles de bain"
-              type="number"
-              min="0"
-              value={form.bathrooms}
-              onChange={(e) => set("bathrooms", e.target.value)}
-            />
-            <InputField
-              label="Surface (m²)"
-              type="number"
-              min="0"
-              value={form.areaSqm}
-              onChange={(e) => set("areaSqm", e.target.value)}
-            />
-            <SelectField
-              label="Type"
-              options={TYPE_OPTIONS}
-              value={form.propertyType}
-              onChange={(e) => set("propertyType", e.target.value)}
-            />
-            <div className="col-span-2">
-              <TextareaField
-                label="Description"
-                required
-                value={form.description}
-                onChange={(e) => set("description", e.target.value)}
-                error={errors.description}
-                rows={3}
-              />
-            </div>
-            <div className="col-span-2">
-              <p className="text-sm font-medium text-foreground mb-2">
-                Images (max 5)
-              </p>
-              <div className="grid grid-cols-2 gap-3">
-                {["img0", "img1", "img2", "img3", "img4"]
-                  .slice(0, Math.min(5, form.images.length + 1))
-                  .map((slotKey, i) => (
-                    <ImageUpload
-                      key={slotKey}
-                      value={form.images[i] ?? null}
-                      onChange={(blob) => {
-                        const imgs = [...form.images];
-                        if (blob) {
-                          imgs[i] = blob;
-                        } else {
-                          imgs.splice(i, 1);
-                        }
-                        set("images", imgs);
-                      }}
-                    />
-                  ))}
-              </div>
-            </div>
-            <div className="col-span-2 flex items-center gap-2">
-              <Checkbox
-                id="featured-p"
-                checked={form.featured}
-                onCheckedChange={(v) => set("featured", !!v)}
-              />
-              <Label htmlFor="featured-p">Mettre en vedette</Label>
-            </div>
-          </div>
-          <div className="flex gap-3 pt-2 border-t border-border">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setModalOpen(false)}
-              className="flex-1"
-            >
-              Annuler
-            </Button>
-            <Button
-              type="submit"
-              className="flex-1"
-              disabled={createMutation.isPending || updateMutation.isPending}
-              data-ocid="save-property-btn"
-            >
-              {createMutation.isPending || updateMutation.isPending
-                ? "Enregistrement…"
-                : "Enregistrer"}
-            </Button>
-          </div>
-        </form>
-      </Modal>
+        <PropertyForm value={form} onChange={setForm} errors={errors} />
+      </FormModal>
 
-      <Modal
-        isOpen={!!deleteConfirm}
+      <DeleteConfirmDialog
+        open={!!deleteConfirm}
         onClose={() => setDeleteConfirm(null)}
-        title="Confirmer la suppression"
-        size="sm"
-      >
-        <p className="text-sm text-muted-foreground mb-4">
-          Supprimer <strong>{deleteConfirm?.title}</strong> ? Cette action est
-          irréversible.
-        </p>
-        <div className="flex gap-3">
-          <Button
-            variant="outline"
-            onClick={() => setDeleteConfirm(null)}
-            className="flex-1"
-          >
-            Annuler
-          </Button>
-          <Button
-            variant="destructive"
-            onClick={() => deleteConfirm && handleDelete(deleteConfirm)}
-            disabled={deleteMutation.isPending}
-            className="flex-1"
-            data-ocid="confirm-delete-btn"
-          >
-            {deleteMutation.isPending ? "Suppression…" : "Supprimer"}
-          </Button>
-        </div>
-      </Modal>
+        onConfirm={handleDelete}
+        itemName={deleteConfirm?.title}
+        entityLabel="cette propriété"
+        isPending={deleteMutation.isPending}
+      />
     </AdminLayout>
   );
 }

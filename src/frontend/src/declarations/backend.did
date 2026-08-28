@@ -1,0 +1,351 @@
+type _ImmutableObjectStorageRefillResult = 
+ record {
+   success: opt bool;
+   topped_up_amount: opt nat;
+ };
+type _ImmutableObjectStorageRefillInformation = record {
+                                                  proposed_top_up_amount:
+                                                   opt nat;};
+type _ImmutableObjectStorageCreateCertificateResult = 
+ record {
+   blob_hash: text;
+   method: text;
+ };
+type VehicleType = 
+ variant {
+   bus;
+   car;
+   minibus;
+   truck;
+ };
+type VehicleInput = 
+ record {
+   capacity: nat;
+   description: text;
+   featured: bool;
+   images: vec ExternalBlob;
+   model: text;
+   pricePerDay: nat;
+   title: text;
+   vehicleType: VehicleType;
+ };
+type VehicleFilter = record {vehicleType: opt VehicleType;};
+type Vehicle = 
+ record {
+   capacity: nat;
+   createdAt: Timestamp;
+   description: text;
+   featured: bool;
+   id: Id;
+   images: vec ExternalBlob;
+   model: text;
+   pricePerDay: nat;
+   title: text;
+   updatedAt: Timestamp;
+   vehicleType: VehicleType;
+ };
+type UserRole = 
+ variant {
+   admin;
+   guest;
+   user;
+ };
+type TrainingInput = 
+ record {
+   description: text;
+   durationDays: nat;
+   image: ExternalBlob;
+   maxCapacity: nat;
+   price: nat;
+   title: text;
+ };
+type TrainingEnrollment = 
+ record {
+   dateRegistered: Timestamp;
+   email: text;
+   name: text;
+   phone: text;
+ };
+type Training = 
+ record {
+   createdAt: Timestamp;
+   description: text;
+   durationDays: nat;
+   enrollments: vec TrainingEnrollment;
+   id: Id;
+   image: ExternalBlob;
+   maxCapacity: nat;
+   price: nat;
+   title: text;
+   updatedAt: Timestamp;
+ };
+type Timestamp = int;
+type QuoteStatus = 
+ variant {
+   accepted;
+   declined;
+   pending;
+   sent;
+ };
+type QuoteInput = 
+ record {
+   budgetRange: text;
+   customerName: text;
+   email: text;
+   phone: text;
+   requirements: text;
+   serviceType: text;
+ };
+type Quote = 
+ record {
+   budgetRange: text;
+   createdAt: Timestamp;
+   customerName: text;
+   email: text;
+   id: Id;
+   phone: text;
+   requirements: text;
+   serviceType: text;
+   status: QuoteStatus;
+   updatedAt: Timestamp;
+ };
+type PropertyType = 
+ variant {
+   apartment;
+   house;
+   land;
+   office;
+ };
+type PropertyInput = 
+ record {
+   areaSqm: nat;
+   bathrooms: nat;
+   bedrooms: nat;
+   description: text;
+   featured: bool;
+   images: vec ExternalBlob;
+   location: text;
+   price: nat;
+   propertyType: PropertyType;
+   title: text;
+ };
+type PropertyFilter = 
+ record {
+   maxPrice: opt nat;
+   minPrice: opt nat;
+   propertyType: opt PropertyType;
+ };
+type Property = 
+ record {
+   areaSqm: nat;
+   bathrooms: nat;
+   bedrooms: nat;
+   createdAt: Timestamp;
+   description: text;
+   featured: bool;
+   id: Id;
+   images: vec ExternalBlob;
+   location: text;
+   price: nat;
+   propertyType: PropertyType;
+   title: text;
+   updatedAt: Timestamp;
+ };
+type PostStatus = 
+ variant {
+   draft;
+   published;
+ };
+type NewsletterSubscriber = 
+ record {
+   email: text;
+   id: Id;
+   subscribedAt: Timestamp;
+   unsubscribedAt: opt Timestamp;
+   verified: bool;
+ };
+type MessageStatus = 
+ variant {
+   archived;
+   read;
+   unread;
+ };
+type MessageInput = 
+ record {
+   customerName: text;
+   email: text;
+   message: text;
+   phone: text;
+ };
+type Message = 
+ record {
+   createdAt: Timestamp;
+   customerName: text;
+   email: text;
+   id: Id;
+   message: text;
+   phone: text;
+   status: MessageStatus;
+ };
+type Id = nat;
+type ExternalBlob = blob;
+type EnrollmentInput = 
+ record {
+   email: text;
+   name: text;
+   phone: text;
+   trainingId: Id;
+ };
+type DashboardStats = 
+ record {
+   pendingBookings: nat;
+   pendingQuotes: nat;
+   totalBlogPosts: nat;
+   totalBookings: nat;
+   totalMessages: nat;
+   totalProperties: nat;
+   totalQuotes: nat;
+   totalSubscribers: nat;
+   totalTrainings: nat;
+   totalVehicles: nat;
+   unreadMessages: nat;
+ };
+type CompanySettings = 
+ record {
+   address: text;
+   email: text;
+   facebookUrl: opt text;
+   instagramUrl: opt text;
+   linkedinUrl: opt text;
+   logoUrl: text;
+   phone: text;
+   whatsapp: text;
+   youtubeUrl: opt text;
+ };
+type BookingStatus = 
+ variant {
+   cancelled;
+   confirmed;
+   pending;
+ };
+type BookingInput = 
+ record {
+   customerName: text;
+   email: text;
+   endDate: text;
+   phone: text;
+   specialRequests: text;
+   startDate: text;
+   vehicleId: Id;
+ };
+type Booking = 
+ record {
+   createdAt: Timestamp;
+   customerName: text;
+   email: text;
+   endDate: text;
+   id: Id;
+   phone: text;
+   specialRequests: text;
+   startDate: text;
+   status: BookingStatus;
+   updatedAt: Timestamp;
+   vehicleId: Id;
+ };
+type BlogPostInput = 
+ record {
+   author: text;
+   categoryTags: vec text;
+   content: text;
+   description: text;
+   featuredImage: ExternalBlob;
+   postStatus: PostStatus;
+   publishDate: opt Timestamp;
+   slug: text;
+   title: text;
+ };
+type BlogPost = 
+ record {
+   author: text;
+   categoryTags: vec text;
+   content: text;
+   createdAt: Timestamp;
+   description: text;
+   featuredImage: ExternalBlob;
+   id: Id;
+   postStatus: PostStatus;
+   publishDate: opt Timestamp;
+   slug: text;
+   title: text;
+   updatedAt: Timestamp;
+ };
+type BlogPage = 
+ record {
+   page: nat;
+   pageSize: nat;
+   posts: vec BlogPost;
+   total: nat;
+ };
+service : {
+  _immutableObjectStorageBlobsAreLive: (hashes: vec blob) -> (vec bool) query;
+  _immutableObjectStorageBlobsToDelete: () -> (vec blob) query;
+  _immutableObjectStorageConfirmBlobDeletion: (blobs: vec blob) -> ();
+  _immutableObjectStorageCreateCertificate: (blobHash: text) ->
+   (_ImmutableObjectStorageCreateCertificateResult);
+  _immutableObjectStorageRefillCashier: (refillInformation:
+   opt _ImmutableObjectStorageRefillInformation) ->
+   (_ImmutableObjectStorageRefillResult);
+  _immutableObjectStorageUpdateGatewayPrincipals: () -> ();
+  _initializeAccessControl: () -> ();
+  adminCreateBlogPost: (input: BlogPostInput) -> (BlogPost);
+  adminCreateProperty: (input: PropertyInput) -> (Property);
+  adminCreateTraining: (input: TrainingInput) -> (Training);
+  adminCreateVehicle: (input: VehicleInput) -> (Vehicle);
+  adminDeleteBlogPost: (id: Id) -> (bool);
+  adminDeleteProperty: (id: Id) -> (bool);
+  adminDeleteTraining: (id: Id) -> (bool);
+  adminDeleteVehicle: (id: Id) -> (bool);
+  adminGetActiveSubscriberCount: () -> (nat) query;
+  adminGetBookingById: (id: Id) -> (opt Booking) query;
+  adminGetDashboardStats: () -> (DashboardStats) query;
+  adminGetEnrollmentsList: (trainingId: Id) -> (vec TrainingEnrollment) query;
+  adminGetPendingBookingCount: () -> (nat) query;
+  adminGetPendingQuoteCount: () -> (nat) query;
+  adminGetQuoteById: (id: Id) -> (opt Quote) query;
+  adminGetUnreadMessageCount: () -> (nat) query;
+  adminListBlogPosts: () -> (vec BlogPost) query;
+  adminListBookings: () -> (vec Booking) query;
+  adminListMessages: () -> (vec Message) query;
+  adminListProperties: () -> (vec Property) query;
+  adminListQuotes: () -> (vec Quote) query;
+  adminListSubscribers: () -> (vec NewsletterSubscriber) query;
+  adminListTrainings: () -> (vec Training) query;
+  adminListVehicles: () -> (vec Vehicle) query;
+  adminUpdateBlogPost: (id: Id, input: BlogPostInput) -> (opt BlogPost);
+  adminUpdateBookingStatus: (id: Id, status: BookingStatus) -> (opt Booking);
+  adminUpdateCompanySettings: (settings: CompanySettings) -> ();
+  adminUpdateMessageStatus: (id: Id, status: MessageStatus) -> (opt Message);
+  adminUpdateProperty: (id: Id, input: PropertyInput) -> (opt Property);
+  adminUpdateQuoteStatus: (id: Id, status: QuoteStatus) -> (opt Quote);
+  adminUpdateTraining: (id: Id, input: TrainingInput) -> (opt Training);
+  adminUpdateVehicle: (id: Id, input: VehicleInput) -> (opt Vehicle);
+  assignCallerUserRole: (user: principal, role: UserRole) -> ();
+  enrollInTraining: (input: EnrollmentInput) -> (bool);
+  getBlogPostById: (id: Id) -> (opt BlogPost) query;
+  getBlogPostBySlug: (slug: text) -> (opt BlogPost) query;
+  getCallerUserRole: () -> (UserRole) query;
+  getCompanySettings: () -> (CompanySettings) query;
+  getProperty: (id: Id) -> (opt Property) query;
+  getTraining: (id: Id) -> (opt Training) query;
+  getVehicle: (id: Id) -> (opt Vehicle) query;
+  isCallerAdmin: () -> (bool) query;
+  listBlogPosts: (page: nat, pageSize: nat) -> (BlogPage) query;
+  listProperties: (filter: PropertyFilter) -> (vec Property) query;
+  listTrainings: () -> (vec Training) query;
+  listVehicles: (filter: VehicleFilter) -> (vec Vehicle) query;
+  submitBooking: (input: BookingInput) -> (Booking);
+  submitMessage: (input: MessageInput) -> (Message);
+  submitQuote: (input: QuoteInput) -> (Quote);
+  subscribeNewsletter: (email: text) -> (NewsletterSubscriber);
+  unsubscribeNewsletter: (email: text) -> (bool);
+}

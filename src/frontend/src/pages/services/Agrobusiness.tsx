@@ -1,12 +1,17 @@
+import {
+  ContactFields,
+  type ContactFieldsInputs,
+  ServiceHero,
+  SuccessConfirmation,
+  validateContactField,
+} from "@/components/shared";
 import { InputField } from "@/components/ui/InputField";
 import { TextareaField } from "@/components/ui/TextareaField";
 import { Button } from "@/components/ui/button";
 import { useSubmitQuote } from "@/hooks/useBackend";
-import type { QuoteInput } from "@/types";
 import { Link } from "@tanstack/react-router";
 import {
   ArrowRight,
-  CheckCircle2,
   Leaf,
   ShoppingBasket,
   Sprout,
@@ -63,32 +68,52 @@ const stats = [
 
 function InquiryForm() {
   const { mutate, isPending, isSuccess, isError } = useSubmitQuote();
-  const [form, setForm] = useState<QuoteInput>({
+  const [contact, setContact] = useState<ContactFieldsInputs>({
     customerName: "",
-    serviceType: "Agrobusiness",
     email: "",
     phone: "",
-    requirements: "",
-    budgetRange: "",
   });
+  const [errors, setErrors] = useState<
+    Partial<
+      Record<keyof ContactFieldsInputs | "requirements" | "budgetRange", string>
+    >
+  >({});
+  const [requirements, setRequirements] = useState("");
+  const [budgetRange, setBudgetRange] = useState("");
+
+  function setError(field: keyof typeof errors, msg: string) {
+    setErrors((prev) => ({ ...prev, [field]: msg }));
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    mutate(form);
+    const newErrors: typeof errors = {
+      requirements: requirements.trim()
+        ? ""
+        : "Décrivez brièvement votre projet.",
+      budgetRange: "",
+    };
+    for (const f of ["customerName", "email", "phone"] as const) {
+      newErrors[f] = validateContactField(f, contact[f], true);
+    }
+    setErrors(newErrors);
+    if (Object.values(newErrors).some((v) => v)) return;
+
+    mutate({
+      serviceType: "Agrobusiness",
+      ...contact,
+      requirements,
+      budgetRange,
+    });
   };
 
   if (isSuccess) {
     return (
-      <div className="flex flex-col items-center gap-4 py-10 text-center">
-        <CheckCircle2 className="w-14 h-14 text-primary" />
-        <h3 className="text-2xl font-display font-bold text-foreground">
-          Message envoyé !
-        </h3>
-        <p className="text-muted-foreground max-w-md">
-          Merci pour votre intérêt. Notre équipe agrobusiness vous contactera
-          sous 48h pour discuter de vos projets.
-        </p>
-      </div>
+      <SuccessConfirmation
+        title="Message envoyé !"
+        description="Merci pour votre intérêt. Notre équipe agrobusiness vous contactera sous 48h pour discuter de vos projets."
+        ocid="agro-success"
+      />
     );
   }
 
@@ -97,69 +122,48 @@ function InquiryForm() {
       onSubmit={handleSubmit}
       className="flex flex-col gap-4"
       data-ocid="agro-inquiry-form"
+      noValidate
     >
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <InputField
-          label="Nom complet"
-          required
-          value={form.customerName}
-          onChange={(e) =>
-            setForm((f) => ({ ...f, customerName: e.target.value }))
-          }
-          placeholder="Votre nom"
-          data-ocid="agro-name"
-        />
-        <InputField
-          label="Téléphone"
-          type="tel"
-          required
-          value={form.phone}
-          onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-          placeholder="+221 XX XXX XX XX"
-          data-ocid="agro-phone"
-        />
-      </div>
-      <InputField
-        label="Email"
-        type="email"
-        required
-        value={form.email}
-        onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-        placeholder="votre@email.com"
-        data-ocid="agro-email"
+      <ContactFields
+        idPrefix="agro"
+        value={contact}
+        onChange={setContact}
+        errors={errors}
+        onBlurValidate={(f) =>
+          setError(f, validateContactField(f, contact[f], true))
+        }
       />
       <InputField
         label="Budget estimé"
-        value={form.budgetRange}
-        onChange={(e) =>
-          setForm((f) => ({ ...f, budgetRange: e.target.value }))
-        }
+        id="agro-budget"
+        value={budgetRange}
+        onChange={(e) => setBudgetRange(e.target.value)}
         placeholder="Ex: 5 000 000 – 20 000 000 FCFA"
         data-ocid="agro-budget"
       />
       <TextareaField
         label="Décrivez votre projet"
+        id="agro-requirements"
         required
-        value={form.requirements}
-        onChange={(e) =>
-          setForm((f) => ({ ...f, requirements: e.target.value }))
-        }
+        value={requirements}
+        onChange={(e) => setRequirements(e.target.value)}
         placeholder="Parlez-nous de votre projet, vos besoins et vos attentes..."
         rows={4}
+        error={errors.requirements}
         data-ocid="agro-requirements"
       />
-      {isError && (
+      {isError ? (
         <p className="text-sm text-destructive text-center" role="alert">
           Une erreur s'est produite. Veuillez réessayer.
         </p>
-      )}
+      ) : null}
       <Button
         type="submit"
-        className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
         disabled={isPending}
+        className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
         data-ocid="agro-submit"
       >
-        {isPending ? "Envoi en cours..." : "Soumettre ma demande"}
+        {isPending ? "Envoi en cours..." : "Envoyer ma demande"}
       </Button>
     </form>
   );
@@ -168,33 +172,21 @@ function InquiryForm() {
 export default function AgrobusinessPage() {
   return (
     <div className="flex flex-col">
-      {/* Hero */}
-      <section className="bg-primary py-16 px-4 text-primary-foreground relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10 pointer-events-none">
-          <div className="absolute top-0 right-0 w-80 h-80 rounded-full bg-primary-foreground translate-x-1/3 -translate-y-1/3" />
-        </div>
-        <div className="max-w-5xl mx-auto relative">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
+      <ServiceHero
+        eyebrow="Agrobusiness"
+        title="Investir dans l'agriculture sénégalaise"
+        subtitle="L'Afrique de l'Ouest dispose d'un potentiel agricole immense. Nous accompagnons vos projets de la conception à la commercialisation."
+        actions={
+          <Button
+            asChild
+            size="lg"
+            className="bg-primary-foreground/20 border border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/30"
+            data-ocid="agro-hero-cta"
           >
-            <div className="flex items-center gap-3 mb-4">
-              <Leaf className="w-8 h-8" />
-              <p className="text-sm font-semibold uppercase tracking-widest opacity-80">
-                Services
-              </p>
-            </div>
-            <h1 className="text-4xl md:text-5xl font-display font-bold mb-4">
-              Agrobusiness
-            </h1>
-            <p className="text-lg opacity-90 max-w-2xl leading-relaxed">
-              L'Afrique de l'Ouest dispose d'un potentiel agricole immense. Nous
-              vous accompagnons pour en tirer le meilleur parti.
-            </p>
-          </motion.div>
-        </div>
-      </section>
+            <a href="#inquiry">Parlez-nous de votre projet</a>
+          </Button>
+        }
+      />
 
       {/* Stats */}
       <section className="bg-muted/40 py-12 px-4 border-b border-border">
@@ -277,7 +269,7 @@ export default function AgrobusinessPage() {
                         className="inline-flex items-center gap-2 text-primary font-semibold text-sm hover:gap-3 transition-all duration-200"
                         data-ocid={`agro-cta-${index}`}
                       >
-                        Nous contacter <ArrowRight className="w-4 h-4" />
+                        En savoir plus <ArrowRight className="w-4 h-4" />
                       </Link>
                     </div>
                   </div>
@@ -289,7 +281,10 @@ export default function AgrobusinessPage() {
       </section>
 
       {/* Inquiry form */}
-      <section className="bg-muted/40 py-16 px-4 border-t border-border">
+      <section
+        id="inquiry"
+        className="bg-muted/40 py-16 px-4 border-t border-border scroll-mt-20"
+      >
         <div className="max-w-2xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -308,6 +303,11 @@ export default function AgrobusinessPage() {
           <div className="bg-card border border-border rounded-2xl p-8 shadow-corporate">
             <InquiryForm />
           </div>
+          <p className="text-xs text-muted-foreground text-center mt-4 flex items-center justify-center gap-1.5">
+            <Leaf className="w-3.5 h-3.5" />
+            Vos données restent confidentielles et ne sont utilisées que pour
+            vous recontacter.
+          </p>
         </div>
       </section>
     </div>

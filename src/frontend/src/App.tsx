@@ -1,8 +1,10 @@
 import { Layout } from "@/components/Layout";
+import { RequireAdmin } from "@/components/RequireAdmin";
 import { PageLoader } from "@/components/ui/LoadingSpinner";
 import {
   Outlet,
   RouterProvider,
+  createHashHistory,
   createRootRoute,
   createRoute,
   createRouter,
@@ -34,9 +36,30 @@ const AdminReservationsPage = lazy(() => import("@/pages/admin/Reservations"));
 const AdminDevisPage = lazy(() => import("@/pages/admin/Devis"));
 const AdminParametresPage = lazy(() => import("@/pages/admin/Parametres"));
 
-// Root route
+function NotFoundPage() {
+  return (
+    <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 px-6 text-center">
+      <p className="font-display text-6xl font-bold text-primary">404</p>
+      <h1 className="font-display text-2xl font-bold text-foreground">
+        Page introuvable
+      </h1>
+      <p className="text-muted-foreground max-w-md">
+        La page que vous cherchez n'existe pas ou a été déplacée.
+      </p>
+      <a
+        href="/"
+        className="inline-flex items-center justify-center h-10 px-5 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+      >
+        Retour à l'accueil
+      </a>
+    </div>
+  );
+}
+
+// Root route — owns layout slot, global fallback for unknown URLs.
 const rootRoute = createRootRoute({
   component: () => <Outlet />,
+  notFoundComponent: NotFoundPage,
 });
 
 // Public layout wrapper
@@ -52,14 +75,16 @@ const publicLayoutRoute = createRoute({
   ),
 });
 
-// Admin layout wrapper (no public header/footer)
+// Admin layout wrapper: protected by RequireAdmin, no public header/footer.
 const adminLayoutRoute = createRoute({
   getParentRoute: () => rootRoute,
   id: "admin-layout",
   component: () => (
-    <Suspense fallback={<PageLoader />}>
-      <Outlet />
-    </Suspense>
+    <RequireAdmin>
+      <Suspense fallback={<PageLoader />}>
+        <Outlet />
+      </Suspense>
+    </RequireAdmin>
   ),
 });
 
@@ -222,7 +247,8 @@ const routeTree = rootRoute.addChildren([
   ]),
 ]);
 
-const router = createRouter({ routeTree });
+const hashHistory = createHashHistory();
+const router = createRouter({ routeTree, history: hashHistory });
 
 declare module "@tanstack/react-router" {
   interface Register {

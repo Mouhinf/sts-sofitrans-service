@@ -6,9 +6,10 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Actor, HttpAgent, type HttpAgentOptions, type ActorConfig, type Agent, type ActorSubclass } from "@icp-sdk/core/agent";
-import type { Principal } from "@icp-sdk/core/principal";
-import { idlFactory, type _SERVICE } from "./declarations/backend.did";
+import { Actor, HttpAgent, type HttpAgentOptions, type ActorConfig, type Agent, type ActorSubclass } from "@dfinity/agent";
+import type { Principal } from "@dfinity/principal";
+
+import { idlFactory, type _SERVICE } from "./declarations/backend.did.js";
 export interface Some<T> {
     __kind__: "Some";
     value: T;
@@ -2112,23 +2113,47 @@ function to_candid_variant_n79(_uploadFile: (file: ExternalBlob) => Promise<Uint
 async function to_candid_vec_n23(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<ExternalBlob>): Promise<Array<_ExternalBlob>> {
     return await Promise.all(value.map(async (x)=>await to_candid_ExternalBlob_n10(_uploadFile, _downloadFile, x)));
 }
+// À la fin de backend.ts, remplace createActor:
+
 export interface CreateActorOptions {
-    agent?: Agent;
-    agentOptions?: HttpAgentOptions;
-    actorOptions?: ActorConfig;
-    processError?: (error: unknown) => never;
+  agent?: Agent;
+  agentOptions?: HttpAgentOptions;
+  actorOptions?: ActorConfig;
+  processError?: (error: unknown) => never;
 }
-export function createActor(canisterId: string, _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, options: CreateActorOptions = {}): Backend {
-    const agent = options.agent || HttpAgent.createSync({
-        ...options.agentOptions
-    });
-    if (options.agent && options.agentOptions) {
-        console.warn("Detected both agent and agentOptions passed to createActor. Ignoring agentOptions and proceeding with the provided agent.");
+
+export function createActor(
+  canisterId: string, 
+  _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, 
+  _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, 
+  options: CreateActorOptions = {}
+): Backend {
+  
+  // Charger l'host depuis env.json si disponible
+  const getHost = async () => {
+    try {
+      const env = await fetch("/env.json").then(r => r.json());
+      return env.backend_host || "https://icp0.io";
+    } catch {
+      return "https://icp0.io";
     }
-    const actor = Actor.createActor<_SERVICE>(idlFactory, {
-        agent,
-        canisterId: canisterId,
-        ...options.actorOptions
-    });
-    return new Backend(actor, _uploadFile, _downloadFile, options.processError);
+  };
+
+  // Pour l'instant, on utilise l'agent fourni ou on en crée un nouveau
+  const agent = options.agent || HttpAgent.createSync({
+    host: "http://127.0.0.1:4943", // Valeur par défaut, sera remplacée dans useActor
+    ...options.agentOptions
+  });
+
+  if (options.agent && options.agentOptions) {
+    console.warn("Detected both agent and agentOptions passed to createActor. Ignoring agentOptions and proceeding with the provided agent.");
+  }
+
+  const actor = Actor.createActor<_SERVICE>(idlFactory, {
+    agent,
+    canisterId: canisterId,
+    ...options.actorOptions
+  });
+
+  return new Backend(actor, _uploadFile, _downloadFile, options.processError);
 }

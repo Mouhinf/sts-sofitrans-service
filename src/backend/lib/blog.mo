@@ -1,3 +1,4 @@
+import Text "mo:core/Text";
 import List "mo:core/List";
 import Time "mo:core/Time";
 import Types "../types/blog";

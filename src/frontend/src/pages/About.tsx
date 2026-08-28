@@ -1,3 +1,4 @@
+import { CTABar } from "@/components/shared";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Link } from "@tanstack/react-router";
@@ -11,13 +12,12 @@ import {
 } from "lucide-react";
 import { motion } from "motion/react";
 
-// ── Data ─────────────────────────────────────────────────────────────────────
-
+// Factual company data — no fabricated numbers.
 const STATS = [
-  { value: "15+", label: "Ans d'expérience" },
-  { value: "500+", label: "Clients satisfaits" },
   { value: "4", label: "Secteurs d'activité" },
+  { value: "1", label: "Siège à Dakar" },
   { value: "100%", label: "Engagement qualité" },
+  { value: "365j/7", label: "Disponibilité" },
 ];
 
 const MISSIONS = [
@@ -68,30 +68,6 @@ const VALUES = [
   },
 ];
 
-const TEAM = [
-  {
-    initials: "MD",
-    name: "Moussa Diallo",
-    title: "Directeur Général",
-    gradientClass: "from-primary to-primary/70",
-    quote: "L'excellence au service du progrès",
-  },
-  {
-    initials: "AF",
-    name: "Aissatou Fall",
-    title: "Responsable Immobilier",
-    gradientClass: "from-secondary to-secondary/70",
-    quote: "Trouver votre espace de vie idéal",
-  },
-  {
-    initials: "IS",
-    name: "Ibrahim Sow",
-    title: "Chef Transport & Logistique",
-    gradientClass: "from-primary/80 to-secondary/80",
-    quote: "Chaque livraison, une promesse tenue",
-  },
-];
-
 const SECTORS = [
   "Transport & Logistique",
   "Immobilier",
@@ -99,23 +75,23 @@ const SECTORS = [
   "Formation",
 ];
 
-// ── Component ─────────────────────────────────────────────────────────────────
-
 export default function AboutPage() {
   return (
     <div className="flex flex-col">
       {/* ── Hero Banner ──────────────────────────────────────────────────── */}
       <section
-        className="relative min-h-[480px] flex items-center justify-center overflow-hidden"
-        style={{
-          backgroundImage:
-            "url('/assets/generated/about-company-hero.dim_1400x600.jpg')",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
+        className="relative min-h-[480px] flex items-center justify-center overflow-hidden bg-gradient-to-br from-[oklch(0.25_0.14_136)] via-[oklch(0.20_0.10_200)] to-[oklch(0.22_0.16_249)]"
         data-ocid="about-hero"
       >
-        <div className="absolute inset-0 bg-gradient-to-br from-[oklch(0.25_0.14_136/0.92)] via-[oklch(0.20_0.10_200/0.85)] to-[oklch(0.22_0.16_249/0.90)]" />
+        <div
+          className="absolute inset-0 opacity-[0.05] pointer-events-none"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle, white 1px, transparent 1px)",
+            backgroundSize: "32px 32px",
+          }}
+          aria-hidden="true"
+        />
 
         <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8 text-center py-24">
           <motion.div
@@ -131,8 +107,7 @@ export default function AboutPage() {
             </h1>
             <p className="text-white/85 text-lg sm:text-xl max-w-2xl mx-auto leading-relaxed">
               Votre partenaire de confiance en logistique, immobilier,
-              agrobusiness et formation professionnelle depuis plus de 15 ans au
-              Sénégal.
+              agrobusiness et formation professionnelle au Sénégal.
             </p>
           </motion.div>
 
@@ -171,7 +146,7 @@ export default function AboutPage() {
                 Notre Histoire
               </Badge>
               <h2 className="font-display text-3xl sm:text-4xl font-bold text-foreground mb-6 leading-tight">
-                Plus de 15 ans d'expertise au service de nos clients
+                Un groupe multi-services ancré au Sénégal
               </h2>
               <div className="space-y-4 text-muted-foreground leading-relaxed">
                 <p>
@@ -198,7 +173,7 @@ export default function AboutPage() {
                   , nous opérons à travers tout le Sénégal et accompagnons nos
                   clients dans leur expansion régionale. Notre slogan,{" "}
                   <em className="text-primary font-semibold">
-                    "Pour Mieux Vous Servir !"
+                    « Pour Mieux Vous Servir ! »
                   </em>
                   , traduit notre engagement quotidien envers l'excellence.
                 </p>
@@ -208,7 +183,7 @@ export default function AboutPage() {
                 {SECTORS.map((sector) => (
                   <span
                     key={sector}
-                    className="inline-flex items-center gap-1.5 bg-primary/8 border border-primary/20 text-primary text-sm px-3 py-1.5 rounded-full font-medium"
+                    className="inline-flex items-center gap-1.5 bg-primary/10 border border-primary/20 text-primary text-sm px-3 py-1.5 rounded-full font-medium"
                   >
                     <span className="w-1.5 h-1.5 rounded-full bg-primary inline-block" />
                     {sector}
@@ -221,75 +196,39 @@ export default function AboutPage() {
               initial={{ opacity: 0, x: 40 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.15 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
               className="relative"
             >
-              <div className="relative rounded-2xl overflow-hidden shadow-elevated">
-                <img
-                  src="/assets/generated/about-team-story.dim_700x500.jpg"
-                  alt="L'équipe STS SOFITRANS SERVICE"
-                  className="w-full h-80 lg:h-96 object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-                <div className="absolute bottom-4 left-4 right-4">
-                  <p className="text-white font-semibold text-sm">
-                    L'équipe STS SOFITRANS SERVICE — Dakar, Sénégal
-                  </p>
+              <div className="bg-gradient-to-br from-primary/5 to-secondary/5 rounded-3xl p-8 lg:p-10 border border-border">
+                <div className="grid grid-cols-2 gap-4">
+                  {MISSIONS.map((item, i) => {
+                    const Icon = item.Icon;
+                    return (
+                      <motion.div
+                        key={item.key}
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.5, delay: i * 0.1 }}
+                        className={`bg-card rounded-2xl p-5 border-2 ${item.borderClass} bg-gradient-to-br ${item.gradientClass}`}
+                      >
+                        <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center mb-3 shadow-corporate">
+                          <Icon className={`w-5 h-5 ${item.iconClass}`} />
+                        </div>
+                        <h3
+                          className={`font-display text-lg font-bold mb-2 ${item.iconClass}`}
+                        >
+                          {item.title}
+                        </h3>
+                        <p className="text-muted-foreground leading-relaxed text-sm">
+                          {item.text}
+                        </p>
+                      </motion.div>
+                    );
+                  })}
                 </div>
               </div>
-              <div className="absolute -bottom-4 -right-4 bg-primary text-white rounded-xl px-5 py-4 shadow-elevated hidden sm:block">
-                <div className="font-display text-2xl font-bold">15+</div>
-                <div className="text-xs text-white/80">Ans d'expertise</div>
-              </div>
             </motion.div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Mission & Vision ─────────────────────────────────────────────── */}
-      <section className="py-20 bg-muted/30" data-ocid="about-mission-vision">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="text-center mb-12"
-          >
-            <Badge className="mb-4 bg-secondary/10 text-secondary border-secondary/20 text-xs uppercase tracking-widest">
-              Ce qui nous guide
-            </Badge>
-            <h2 className="font-display text-3xl sm:text-4xl font-bold text-foreground">
-              Mission & Vision
-            </h2>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-            {MISSIONS.map((item, index) => {
-              const Icon = item.Icon;
-              return (
-                <motion.div
-                  key={item.key}
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.55, delay: index * 0.15 }}
-                  className={`bg-gradient-to-br ${item.gradientClass} border ${item.borderClass} rounded-2xl p-8 hover-lift`}
-                >
-                  <div className="w-12 h-12 rounded-xl bg-background flex items-center justify-center mb-5 shadow-corporate">
-                    <Icon className={`w-6 h-6 ${item.iconClass}`} />
-                  </div>
-                  <h3
-                    className={`font-display text-xl font-bold mb-3 ${item.iconClass}`}
-                  >
-                    {item.title}
-                  </h3>
-                  <p className="text-muted-foreground leading-relaxed text-sm">
-                    {item.text}
-                  </p>
-                </motion.div>
-              );
-            })}
           </div>
         </div>
       </section>
@@ -344,98 +283,25 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* ── Notre Équipe ─────────────────────────────────────────────────── */}
-      <section className="py-20 bg-muted/30" data-ocid="about-equipe">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="text-center mb-14"
+      {/* ── CTA ──────────────────────────────────────────────────────────── */}
+      <CTABar
+        title="Rejoignez notre réseau de partenaires"
+        description="Que vous soyez entrepreneur, investisseur ou particulier, nous avons les solutions adaptées à vos ambitions. Prenons contact."
+        actions={
+          <Button
+            asChild
+            size="lg"
+            className="bg-primary-foreground/20 border border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/30"
+            data-ocid="about-cta-btn"
           >
-            <Badge className="mb-4 bg-secondary/10 text-secondary border-secondary/20 text-xs uppercase tracking-widest">
-              Les hommes & femmes derrière STS
-            </Badge>
-            <h2 className="font-display text-3xl sm:text-4xl font-bold text-foreground mb-3">
-              Notre Équipe
-            </h2>
-            <p className="text-muted-foreground max-w-xl mx-auto text-sm">
-              Des professionnels passionnés, experts dans leurs domaines, unis
-              par la même vision d'excellence au service de l'Afrique de
-              l'Ouest.
-            </p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 max-w-4xl mx-auto">
-            {TEAM.map((member, index) => (
-              <motion.div
-                key={member.name}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.55, delay: index * 0.12 }}
-                className="bg-card border border-border rounded-2xl p-8 text-center hover-lift"
-              >
-                <div
-                  className={`w-20 h-20 rounded-full bg-gradient-to-br ${member.gradientClass} flex items-center justify-center mx-auto mb-5 shadow-elevated`}
-                >
-                  <span className="font-display text-2xl font-bold text-white">
-                    {member.initials}
-                  </span>
-                </div>
-                <h3 className="font-display text-lg font-bold text-foreground mb-1">
-                  {member.name}
-                </h3>
-                <p className="text-primary font-medium text-sm mb-3">
-                  {member.title}
-                </p>
-                <p className="text-muted-foreground text-xs italic leading-relaxed">
-                  "{member.quote}"
-                </p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── CTA Banner ───────────────────────────────────────────────────── */}
-      <section
-        className="py-20 bg-gradient-to-br from-primary via-primary/90 to-secondary relative overflow-hidden"
-        data-ocid="about-cta"
-      >
-        <div className="absolute top-0 right-0 w-64 h-64 rounded-full bg-white/5 translate-x-1/3 -translate-y-1/3 pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-48 h-48 rounded-full bg-white/5 -translate-x-1/4 translate-y-1/4 pointer-events-none" />
-
-        <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.96 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-          >
-            <p className="text-white/70 text-sm uppercase tracking-widest mb-3 font-medium">
-              Construisons ensemble
-            </p>
-            <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-5 leading-tight max-w-2xl mx-auto">
-              Rejoignez notre réseau de partenaires
-            </h2>
-            <p className="text-white/80 text-base sm:text-lg max-w-xl mx-auto mb-10 leading-relaxed">
-              Que vous soyez entrepreneur, investisseur ou particulier, nous
-              avons les solutions adaptées à vos ambitions. Prenons contact.
-            </p>
-            <Link to="/contact" data-ocid="about-cta-btn">
-              <Button
-                size="lg"
-                className="bg-white text-primary hover:bg-white/90 font-semibold px-8 py-6 text-base rounded-xl shadow-elevated transition-smooth group"
-              >
-                Nous contacter
-                <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-smooth" />
-              </Button>
+            <Link to="/contact">
+              Nous contacter
+              <ArrowRight className="ml-2 w-5 h-5" />
             </Link>
-          </motion.div>
-        </div>
-      </section>
+          </Button>
+        }
+        backgroundClassName="bg-gradient-to-br from-primary via-primary/90 to-secondary"
+      />
     </div>
   );
 }

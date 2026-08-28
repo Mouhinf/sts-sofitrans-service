@@ -3,11 +3,12 @@ import Runtime "mo:core/Runtime";
 import Time "mo:core/Time";
 import Types "../types/bookings";
 import Common "../types/common";
+import Text "mo:core/Text";
 
 module {
   // Validation basique du format email
   func isValidEmail(email : Text) : Bool {
-    email.contains(#char '@') and email.contains(#char '.')
+    Text.contains(email, #text "@") and Text.contains(email, #text ".")
   };
 
   // Retourne toutes les réservations

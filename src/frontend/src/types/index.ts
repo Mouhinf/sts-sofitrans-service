@@ -1,3 +1,6 @@
+// src/frontend/src/types/index.ts
+
+// ✅ Types depuis backend.ts (pas backend.d.ts)
 export type {
   Property,
   PropertyInput,
@@ -23,9 +26,10 @@ export type {
   NewsletterSubscriber,
   Timestamp,
   Id,
-} from "../backend.d.ts";
+  ExternalBlob, // ✅ Déplacé ici avec les autres types
+} from "../backend";
 
-// Enums re-exported as values from the backend implementation file
+// ✅ Enums exportés comme valeurs (pas de changement)
 export {
   PropertyType,
   VehicleType,
@@ -36,8 +40,7 @@ export {
   UserRole,
 } from "../backend";
 
-export type { ExternalBlob } from "../backend.d.ts";
-
+// ✅ Types locaux de l'application
 export interface NavItem {
   label: string;
   href: string;
