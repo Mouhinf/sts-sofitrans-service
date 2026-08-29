@@ -34,3 +34,4 @@ export function truncate(text: string, max: number): string {
 export function hasPostImage(post: BlogPost): boolean {
   return !!post.featuredImageUrl && post.featuredImageUrl !== "";
 }
+
