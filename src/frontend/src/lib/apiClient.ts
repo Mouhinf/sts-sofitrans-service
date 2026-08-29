@@ -3,7 +3,6 @@
 // Thin fetch wrapper used by the React Query hooks. Pulls the base URL from
 // `VITE_API_URL` (set in `.env` for dev and on Vercel for prod) and the JWT
 // from `localStorage` when present.
-// Build marker: 1787961856
 
 const RAW_API_URL = import.meta.env.VITE_API_URL as string | undefined;
 
