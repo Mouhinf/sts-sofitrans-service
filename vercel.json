@@ -4,6 +4,12 @@
   "devCommand": "cd src/frontend && pnpm dev",
   "installCommand": "echo 'install handled in buildCommand'",
   "outputDirectory": "src/frontend/dist",
+  "functions": {
+    "api/[...path].ts": {
+      "maxDuration": 30,
+      "memory": 1024
+    }
+  },
   "rewrites": [
     { "source": "/((?!api/|assets/).*)", "destination": "/index.html" }
   ]
