@@ -42,7 +42,7 @@ export interface AuthState {
   isLoggingIn: boolean;
   /** Last login attempt failed. */
   isLoginError: boolean;
-  /** Currently validating the stored token against `/api/auth/me`. */
+  /** Currently validating the stored token against `/api/account/me`. */
   isCheckingAdmin: boolean;
   /** True once the backend confirms `admin` role for the current user. */
   isAdmin: boolean;
@@ -75,7 +75,7 @@ export function useAuth(): AuthState {
     queryFn: async () => {
       if (!getToken()) return null;
       try {
-        return await request<MeResponse>("/api/auth/me", { auth: true });
+        return await request<MeResponse>("/api/account/me", { auth: true });
       } catch (err) {
         if (err instanceof ApiError && err.status === 401) {
           setToken(null);
@@ -91,7 +91,7 @@ export function useAuth(): AuthState {
 
   const loginMutation = useMutation<LoginResponse, Error, LoginVars>({
     mutationFn: async (vars) =>
-      request<LoginResponse>("/api/auth/login", {
+      request<LoginResponse>("/api/account/login", {
         method: "POST",
         body: { email: vars.email, password: vars.password },
       }),

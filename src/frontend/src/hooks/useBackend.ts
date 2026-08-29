@@ -576,7 +576,7 @@ export interface DashboardStats {
 export function useAdminDashboardStats() {
   return useQuery<DashboardStats>({
     queryKey: ["admin", "stats"],
-    queryFn: () => request<DashboardStats>(`/api/admin/stats`, { auth: true }),
+    queryFn: () => request<DashboardStats>(`/api/manage/stats`, { auth: true }),
     staleTime: 30_000,
   });
 }

@@ -64,7 +64,7 @@ export function createApp(): express.Express {
   app.use("/health", healthRouter);
 
   // ── Public DB-backed routes (guarded) ───────────────────────
-  app.use("/api/auth", dbReady, authRouter);
+  app.use("/api/account", dbReady, authRouter);
   app.use("/api/properties", dbReady, propertiesRouter);
   app.use("/api/vehicles", dbReady, vehiclesRouter);
   app.use("/api/trainings", dbReady, trainingsRouter);
@@ -76,7 +76,7 @@ export function createApp(): express.Express {
   app.use("/api/newsletter", dbReady, newsletterRouter);
   app.use("/api/settings", dbReady, settingsRouter);
   app.use("/api/upload", dbReady, uploadRouter);
-  app.use("/api/admin", dbReady, adminRouter);
+  app.use("/api/manage", dbReady, adminRouter);
 
   app.use(notFound);
   app.use(errorHandler);
