@@ -1,75 +1,72 @@
-# Deploying the STS SOFITRANS backend (Node + Prisma + Cloudinary)
+# Deploying the STS SOFITRANS backend
 
-The frontend is hosted on Vercel at https://sts-sofitrans.vercel.app and points
-at this API over `VITE_API_URL`. The Hobby Vercel plan only allows 12
-Serverless Functions, so the backend is deployed separately to a long-running
-Node 22 host (Render / Railway / Fly.io recommended).
+The frontend is hosted on Vercel at https://sts-sofitrans.vercel.app and talks
+to the backend over `VITE_API_URL=/api`. A single Vercel serverless function
+(`api/[...path].ts` at the project root) wraps the Express app from `server/`,
+so no separate API host is strictly required.
 
-## 1. Provision a managed Postgres database
+There are two supported approaches:
 
-- Render: https://dashboard.render.com → New → PostgreSQL (Free plan OK for dev).
-- Copy the `External Database URL` (looks like `postgresql://user:pass@host:5432/db`).
+## Option A — Vercel Serverless (recommended, simplest)
 
-## 2. Provision a Cloudinary account (optional but recommended)
+The repo is already wired for this. Just set the env vars in the Vercel
+project and deploy.
 
-- https://cloudinary.com → copy `Cloud name`, `API Key`, `API Secret`.
-- Cloudinary is optional: if the three `CLOUDINARY_*` env vars are missing,
-  uploads are written to the local `server/uploads/` directory instead.
+1. Create a managed Postgres database (any of these work, all have a free tier):
+   - **Vercel Storage → Postgres** (one click in the Vercel dashboard).
+   - **Neon** — https://neon.tech → sign up with GitHub → new project → copy the
+     pooled connection string.
+   - **Supabase** — https://supabase.com → new project → Settings → Database →
+     copy the connection string.
+2. Add these env vars in **Vercel → sts-sofitrans → Settings → Environment
+   Variables** (Production):
+   - `DATABASE_URL` — the Postgres connection string from step 1
+   - `JWT_SECRET` — 32-byte random string (`openssl rand -hex 32`)
+   - `ADMIN_EMAIL` — default `admin@sts-sofitrans.sn`
+   - `ADMIN_PASSWORD` — pick a strong one (default `admin123`)
+   - `CORS_ORIGINS` — `https://sts-sofitrans.vercel.app,http://localhost:5173`
+   - `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`
+     *(optional — enables Cloudinary uploads; otherwise images are written to
+     a non-persistent local folder)*
+3. Trigger a redeploy (Settings → Deployments → click the latest → Redeploy).
+4. Once the deployment is Ready, open the Vercel Shell for the deployment and
+   run the migrations + seed:
+   ```bash
+   cd server
+   npm run db:deploy
+   npm run seed
+   ```
 
-## 3. Deploy the `server/` folder
+## Option B — Long-running host (Render / Railway / Fly.io)
 
-### Option A — Render Blueprint (recommended)
+If you'd rather run the API as a traditional Node service:
 
-1. Render → New → Blueprint.
-2. Point at this GitHub repo, root directory: `server/`.
-3. Render auto-detects `render.yaml` (already committed).
-4. Fill in the `DATABASE_URL`, `JWT_SECRET` (any 32-char random string), and
-   the `CLOUDINARY_*` env vars if you have them.
-5. Render runs `npm install && npm run db:deploy && npm run build` then starts
-   the server with `npm start`.
+1. Render Blueprint: `server/render.yaml` is committed and auto-detected when
+   the repo is connected to a new Render Blueprint service.
+2. Set the same env vars as Option A in the service's environment tab.
+3. The start command is `npm start`; the build command is
+   `npm install && npm run db:deploy && npm run build`.
+4. Once the service is live, set `VITE_API_URL=https://<your-api-host>` in the
+   Vercel project env vars and redeploy the frontend.
+5. Run `npm run seed` from the service's shell once.
 
-### Option B — Manual
-
-1. Create a Web Service on Render / Railway / Fly.io pointing at this repo.
-2. Build command: `npm install && npm run db:deploy && npm run build`.
-3. Start command: `npm start`.
-4. Add the env vars below.
-5. Open the service Shell once and run `npm run seed` to create the admin user
-   and the seed content (3 properties, 3 vehicles, 3 trainings).
-
-## 4. Required environment variables
-
-| Variable | Required | Description |
-| --- | --- | --- |
-| `DATABASE_URL` | yes | Postgres connection string |
-| `JWT_SECRET` | yes | 32-byte random string (`openssl rand -hex 32`) |
-| `JWT_EXPIRES_IN` | no | default `7d` |
-| `ADMIN_EMAIL` | yes | admin login email (default `admin@sts-sofitrans.sn`) |
-| `ADMIN_PASSWORD` | yes | admin login password (default `admin123`, **change in prod**) |
-| `ADMIN_NAME` | no | admin display name |
-| `CORS_ORIGINS` | yes | comma-separated list, **must include** `https://sts-sofitrans.vercel.app` |
-| `PORT` | no | default `3001` |
-| `NODE_ENV` | no | `production` |
-| `CLOUDINARY_CLOUD_NAME` | optional | enables Cloudinary uploads |
-| `CLOUDINARY_API_KEY` | optional | — |
-| `CLOUDINARY_API_SECRET` | optional | — |
-
-## 5. Point the frontend at the new API
-
-The Vercel project needs a single env var to point at the production API:
-
-- Vercel dashboard → sts-sofitrans → Settings → Environment Variables.
-- Add `VITE_API_URL` = `https://<your-api-host>` for Production.
-- Redeploy.
-
-## 6. Smoke-test once deployed
+## Local development
 
 ```bash
-curl https://<your-api-host>/health
-# → {"status":"ok","time":"..."}
-
-curl -X POST https://<your-api-host>/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"admin@sts-sofitrans.sn","password":"admin123"}'
-# → {"token":"...","user":{...}}
+cd server
+docker compose up -d             # Postgres on localhost:5432
+npm install
+npm run db:migrate              # apply migrations
+npm run seed                    # admin + sample data
+npm run dev                     # API on http://localhost:3001
 ```
+
+In another terminal:
+
+```bash
+cd src/frontend
+pnpm install
+pnpm dev                        # http://localhost:5173 (proxies /api to :3001)
+```
+
+Default credentials: `admin@sts-sofitrans.sn` / `admin123`.
